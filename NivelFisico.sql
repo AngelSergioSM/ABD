@@ -57,6 +57,15 @@ ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY 
 ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
 
 
+CREATE TABLE autorizacion (
+    tipo        INTEGER NOT NULL,
+    id          INTEGER NOT NULL,
+    empresa_id  VARCHAR2(30) NOT NULL
+);
+
+ALTER TABLE autorizacion ADD CONSTRAINT autorizacion_pk PRIMARY KEY ( id);
+
+
 CREATE TABLE cliente (
     id              VARCHAR2(30) NOT NULL,
     identificacion  VARCHAR2(40) NOT NULL,
@@ -204,9 +213,8 @@ CREATE TABLE transaccion (
 ALTER TABLE transaccion ADD CONSTRAINT transaccion_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
 
 CREATE TABLE autorizacion (
-    tipo        INTEGER NOT NULL,
     id          INTEGER NOT NULL,
-    empresa_id  VARCHAR2(30) NOT NULL
+    tipo        INTEGER NOT NULL
 );
 
 ALTER TABLE autorizacion ADD CONSTRAINT autorización_pk PRIMARY KEY ( id);
