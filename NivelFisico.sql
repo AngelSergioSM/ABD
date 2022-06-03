@@ -52,9 +52,9 @@ CREATE TABLE cliente (
     pais            VARCHAR2(20) NOT NULL
 ); -- AQUI HAY CAMBIOS RESPECTO EL DRIVE
 
-ALTER TABLE cliente ADD CONSTRAINT cliente_pk PRIMARY KEY ( id );
+ALTER TABLE cliente ADD CONSTRAINT cliente_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
 
-ALTER TABLE cliente ADD CONSTRAINT cliente_identificacion_un UNIQUE ( identificacion );
+ALTER TABLE cliente ADD CONSTRAINT cliente_identificacion_un UNIQUE ( identificacion ) USING INDEX TABLESPACE TS_INDICES;
 
 
 CREATE TABLE cuenta (
@@ -62,7 +62,7 @@ CREATE TABLE cuenta (
     swift  VARCHAR2(20)
 );
 
-ALTER TABLE cuenta ADD CONSTRAINT cuenta_pk PRIMARY KEY ( iban );
+ALTER TABLE cuenta ADD CONSTRAINT cuenta_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
 
 CREATE TABLE cuenta_fintech (
     iban            VARCHAR2(25) NOT NULL, -- CAMBIOS
@@ -73,7 +73,7 @@ CREATE TABLE cuenta_fintech (
     cliente_id      VARCHAR2(30) NOT NULL -- Para la relacion Many2One
 );
 
-ALTER TABLE cuenta_fintech ADD CONSTRAINT cuenta_fintech_pk PRIMARY KEY ( iban );
+ALTER TABLE cuenta_fintech ADD CONSTRAINT cuenta_fintech_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
 
 -- ESTA TABLA???
 CREATE TABLE cuenta_referencia (
@@ -87,14 +87,16 @@ CREATE TABLE cuenta_referencia (
     divisa_abreviatura  VARCHAR2(10) NOT NULL -- Para la relación Many2One
 );
 
-ALTER TABLE cuenta_referencia ADD CONSTRAINT cuenta_referencia_pk PRIMARY KEY ( iban );
+ALTER TABLE cuenta_referencia ADD CONSTRAINT cuenta_referencia_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
 
 CREATE TABLE depositada_en (
-    saldo                   NUMBER(12, 2) NOT NULL, -- CAMBIADO. MAS PRECISION
+    saldo                   NUMBER(20, 6) NOT NULL, -- CAMBIADO. MAS PRECISION
     cuenta_referencia_iban  VARCHAR2(25) NOT NULL, -- CAMBIADO
     pooled_account_iban      VARCHAR2(25) NOT NULL -- CAMBIADO
 );
 
+ALTER TABLE depositada_en ADD CONSTRAINT depositada_en_pk PRIMARY KEY ( cuenta_referencia_iban,
+                                                                        pooled_account_iban ) USING INDEX TABLESPACE TS_INDICES;
 
 CREATE TABLE divisa (
     abreviatura  VARCHAR2(10) NOT NULL,
@@ -144,7 +146,7 @@ ALTER TABLE pooled_account ADD CONSTRAINT pooled_account_pk PRIMARY KEY ( iban )
 
 CREATE TABLE segregada (
     iban                    VARCHAR2(25) NOT NULL, -- CAMBIADO
-    comision                NUMBER(9, 3), --------------------------------------------------------------------------------------------------------
+    comision                NUMBER(9, 3),
     cuenta_referencia_iban  VARCHAR2(25) NOT NULL -- CAMBIADO
 );
 
