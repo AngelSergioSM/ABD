@@ -1,0 +1,20 @@
+–DESDE SYSTEM–
+grant CREATE JOB to fintech; 
+
+–DESDE FINTECH–
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+    job_name => 'J_LIQUIDAR',
+    job_type => 'PLSQL_BLOCK',
+    job_action => 'BEGIN EXEC P_COBRO; END;',
+    start_date => LAST_DAY(SYSDATE)+1,
+    repeat_interval => 'FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=0',
+    end_date => NULL,
+    enabled => TRUE,
+    comments => 'Ejecuta procedimiento P_COBRO cada primer dia del mes');
+END;
+
+--SE NECESITA CREAR EL PROCESO P_COBRO PARA PODER REALIZAR PRUEBAS
+-- PERO EL JOB SE CREA CORRECTAMENTE
+
