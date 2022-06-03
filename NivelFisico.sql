@@ -39,6 +39,20 @@ CREATE TABLE aplazado (
 
 ALTER TABLE aplazado ADD CONSTRAINT aplazado_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
 
+
+CREATE TABLE persona_autorizada (
+    id               VARCHAR2(20) NOT NULL,
+    identificacion   VARCHAR2(20) NOT NULL,
+    nombre           VARCHAR2(20) NOT NULL,
+    apellidos        VARCHAR2(20) NOT NULL,
+    direccion        VARCHAR2(30) NOT NULL,
+    fecha_nacimiento DATE,
+    fecha_inicio     DATE,
+    estado           VARCHAR2(20),
+    fecha_fin        DATE
+);
+
+
 CREATE TABLE cliente (
     id              VARCHAR2(30) NOT NULL,
     identificacion  VARCHAR2(40) NOT NULL,
@@ -46,7 +60,7 @@ CREATE TABLE cliente (
     estado          VARCHAR2(10) NOT NULL,
     fecha_alta      DATE NOT NULL,
     fecha_baja      DATE,
-    dirreccion      VARCHAR2(20) NOT NULL,
+    direccion      VARCHAR2(20) NOT NULL,
     ciudad          VARCHAR2(20) NOT NULL,
     codigopostal    INTEGER NOT NULL,
     pais            VARCHAR2(20) NOT NULL
@@ -95,16 +109,12 @@ CREATE TABLE depositada_en (
     pooled_account_iban      VARCHAR2(25) NOT NULL -- CAMBIADO
 );
 
-ALTER TABLE depositada_en ADD CONSTRAINT depositada_en_pk PRIMARY KEY ( cuenta_referencia_iban,
-                                                                        pooled_account_iban ) USING INDEX TABLESPACE TS_INDICES;
-
 CREATE TABLE divisa (
     abreviatura  VARCHAR2(10) NOT NULL,
     nombre       VARCHAR2(30) NOT NULL, -- CAMBIADO
     simbolo      VARCHAR2(5 CHAR), -- CAMBIADO
     cambioeuro   NUMBER(30, 25) NOT NULL
 );                                                                    
-
 
 
 ALTER TABLE divisa ADD CONSTRAINT divisa_pk PRIMARY KEY ( abreviatura ) USING INDEX TABLESPACE TS_INDICES;
@@ -156,7 +166,7 @@ CREATE TABLE segregada (
 -- NOMBRE CAMBIADO A SINGULAR
 CREATE TABLE tarjeta_credito (
     num_tarjeta       NUMBER(16) NOT NULL, -- CAMBIADO
-    cvv               NUMBER(3) NOT NULL,
+    cvc               NUMBER(3) NOT NULL,
     fecha_caducidad   DATE NOT NULL,
     nom_propietario   VARCHAR2(20) NOT NULL,
     fecha_activacion  DATE NOT NULL,
@@ -165,6 +175,8 @@ CREATE TABLE tarjeta_credito (
     limite_fisico     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_online     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_cajero     NUMBER(5) NOT NULL -- CAMBIADO DE 4 A 5
+    cliente_id        VARCHAR2(30) NOT NULL,
+    cuenta_id         VARCHAR2(25) NOT NULL
 );
 
 ALTER TABLE tarjeta_credito ADD CONSTRAINT tarjeta_credito_pk PRIMARY KEY (num_tarjeta) USING INDEX TABLESPACE TS_INDICES;
@@ -195,46 +207,65 @@ CREATE TABLE autorizacion (
 
 ALTER TABLE autorizacion ADD CONSTRAINT autorización_pk PRIMARY KEY ( id);
 
+
+-----------------------------------------------------------------------------------------------------------------------
+
 ALTER TABLE aplazado
     ADD CONSTRAINT aplazado_pago_credito_debito_fk FOREIGN KEY ( id_unico )
         REFERENCES pago_credito_debito ( id_unico );
 
 ALTER TABLE autorizacion
     ADD CONSTRAINT autorización_empresa_fk FOREIGN KEY ( empresa_id )
-        REFERENCES empresa ( id );
+        REFERENCES empresa ( id )
+    NOT DEFERRABLE;
+
+ALTER TABLE autorizacion
+    ADD CONSTRAINT autorizacion_persona_fk FOREIGN KEY ( persona_id )
+        REFERENCES persona_autorizada ( id )
+    NOT DEFERRABLE;
+
 
 ALTER TABLE cuenta_fintech
     ADD CONSTRAINT cuenta_fintech_cliente_fk FOREIGN KEY ( cliente_id )
-        REFERENCES cliente ( id );
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
 
 ALTER TABLE cuenta_fintech
     ADD CONSTRAINT cuenta_fintech_cuenta_fk FOREIGN KEY ( iban )
-        REFERENCES cuenta ( iban );
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE cuenta_referencia
     ADD CONSTRAINT cuenta_referencia_cuenta_fk FOREIGN KEY ( iban )
-        REFERENCES cuenta ( iban );
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE cuenta_referencia
     ADD CONSTRAINT cuenta_referencia_divisa_fk FOREIGN KEY ( divisa_abreviatura )
-        REFERENCES divisa ( abreviatura );
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
+
  
 ALTER TABLE depositada_en
     ADD CONSTRAINT depositada_en_cuenta_referencia_fk FOREIGN KEY ( cuenta_referencia_iban )
-        REFERENCES cuenta_referencia ( iban );
+        REFERENCES cuenta_referencia ( iban )
+    NOT DEFERRABLE;
+
 
 ALTER TABLE depositada_en
     ADD CONSTRAINT depositada_en_pooled_account_fk FOREIGN KEY ( pooled_account_iban )
-        REFERENCES pooled_account ( iban );
+        REFERENCES pooled_account ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE empresa
     ADD CONSTRAINT empresa_cliente_fk FOREIGN KEY ( id )
-        REFERENCES cliente ( id );
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
 
 ALTER TABLE individual
     ADD CONSTRAINT individual_cliente_fk FOREIGN KEY ( id )
-        REFERENCES cliente ( id );
-
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
  
 ALTER TABLE pago_credito_debito
     ADD CONSTRAINT pago_credito_debito_transaccion_fk FOREIGN KEY ( id_unico )
@@ -243,35 +274,48 @@ ALTER TABLE pago_credito_debito
  
 ALTER TABLE pooled_account
     ADD CONSTRAINT pooled_account_cuenta_fintech_fk FOREIGN KEY ( iban )
-        REFERENCES cuenta_fintech ( iban );
+        REFERENCES cuenta_fintech ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE segregada
     ADD CONSTRAINT segregada_cuenta_fintech_fk FOREIGN KEY ( iban )
-        REFERENCES cuenta_fintech ( iban );
+        REFERENCES cuenta_fintech ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE segregada
     ADD CONSTRAINT segregada_cuenta_referencia_fk FOREIGN KEY ( cuenta_referencia_iban )
-        REFERENCES cuenta_referencia ( iban );
+        REFERENCES cuenta_referencia ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
     ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_iban )
-        REFERENCES cuenta ( iban );
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE tarjeta_credito
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_id )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_cuenta_fk FOREIGN KEY ( cuenta_iban )
-        REFERENCES cuenta ( iban );
+    ADD CONSTRAINT transaccion_cuenta_fk1 FOREIGN KEY ( cuenta_iban )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_cuenta_fkv1 FOREIGN KEY ( cuenta_iban1 )
-        REFERENCES cuenta ( iban );
+    ADD CONSTRAINT transaccion_cuenta_fk2 FOREIGN KEY ( cuenta_iban1 )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_divisa_fk FOREIGN KEY ( divisa_abreviatura )
-        REFERENCES divisa ( abreviatura );
+    ADD CONSTRAINT transaccion_divisa_fk1 FOREIGN KEY ( divisa_abreviatura )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_divisa_fkv1 FOREIGN KEY ( divisa_abreviatura1 )
-        REFERENCES divisa ( abreviatura );
+    ADD CONSTRAINT transaccion_divisa_fk2 FOREIGN KEY ( divisa_abreviatura1 )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
 
 ALTER TABLE transaccion
     ADD CONSTRAINT transaccion_tarjeta_credito_fk FOREIGN KEY ( tarjeta_credito_num_tarjeta)
