@@ -52,6 +52,10 @@ CREATE TABLE persona_autorizada (
     fecha_fin        DATE
 );
 
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id );
+
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
+
 
 CREATE TABLE cliente (
     id              VARCHAR2(30) NOT NULL,
