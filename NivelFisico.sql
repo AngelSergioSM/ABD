@@ -211,13 +211,6 @@ CREATE TABLE transaccion (
 
 ALTER TABLE transaccion ADD CONSTRAINT transaccion_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
 
-CREATE TABLE autorizacion (
-    id          INTEGER NOT NULL,
-    tipo        INTEGER NOT NULL
-);
-
-ALTER TABLE autorizacion ADD CONSTRAINT autorización_pk PRIMARY KEY ( id);
-
 
 -----------------------------------------------------------------------------------------------------------------------
 
