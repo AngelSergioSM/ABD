@@ -63,8 +63,6 @@ CREATE TABLE autorizacion (
     empresa_id          VARCHAR2(30) NOT NULL
 );
 
-ALTER TABLE autorizacion ADD CONSTRAINT autorizacion_pk PRIMARY KEY ( id);
-
 
 CREATE TABLE cliente (
     id              VARCHAR2(30) NOT NULL,
