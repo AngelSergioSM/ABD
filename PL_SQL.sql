@@ -22,7 +22,7 @@ create or replace PACKAGE PK_GESTION_CLIENTES AS
 CLIENTE_EXISTENTE_EXCEPTION EXCEPTION;
 CLIENTE_NO_VALIDO_EXCEPTION EXCEPTION;
 
-   --RF3
+        --RF3
         PROCEDURE MODIFICACLIENTE(C_ID  CLIENTE.ID%TYPE,
                         C_IDENT CLIENTE.IDENTIFICACION%TYPE,
                         C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
@@ -40,6 +40,8 @@ CLIENTE_NO_VALIDO_EXCEPTION EXCEPTION;
 CLIENTE_NO_EXISTENTE_EXCEPTION EXCEPTION;
 
 
+        --RF4
+        PROCEDURE BAJACLIENTE(C_IDENT  CLIENTE.IDENTIFICACION%TYPE);
 
 
 
@@ -114,7 +116,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
                         I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
                         I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
                         I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE)AS
-    X NUMBER(3,0);
+    X INT;
 
   BEGIN
        SELECT COUNT(ID) INTO X FROM CLIENTE WHERE C_ID=ID;
@@ -130,7 +132,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
             	CIUDAD = C_CIUDAD,
             	CODIGOPOSTAL = C_POSTAL,
             	PAIS = C_PAIS
-    	WHERE ID = C_ID;
+    	WHERE CLIENTE.ID = C_ID;
    	 
      
         IF(C_TIPO='INDIVIDUAL') THEN
@@ -139,13 +141,13 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
                 	NOMBRE = I_NOMBRE,
                 	APELLIDO = I_APELLIDO,
                 	FECHA_NACIMIENTO = I_FN
-        	WHERE ID = C_ID;
+        	WHERE INDIVIDUAL.ID = C_ID;
             
         ELSIF(C_TIPO='EMPRESA') THEN
         	UPDATE EMPRESA
         	SET ID = C_ID,
                 	RAZON_SOCIAL = E_RAZON
-        	WHERE ID = C_ID;
+        	WHERE EMPRESA.ID = C_ID;
             
     	ELSE
         	RAISE TIPO_NO_VALIDO_EXCEPTION;
@@ -159,9 +161,40 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
         ROLLBACK;
         RAISE;
 
+  END MODIFICACLIENTE;
+
 END PK_GESTION_CLIENTES;
 
-
+--RF4
+        PROCEDURE BAJACLIENTE(C_IDENT  CLIENTE.IDENTIFICACION%TYPE)AS
+        
+        n_cuentas INT;
+        X INT;
+        BEGIN
+            SELECT COUNT(IDENTIFICACION) INTO X FROM CLIENTE WHERE C_IDENT=IDENTIFICACION;
+            IF(X<=0) THEN
+                RAISE CLIENTE_NO_EXISTENTE_EXCEPTION;
+            END IF;
+            
+            SELECT COUNT(*) INTO n_cuentas 
+             FROM cuenta_fintech INNER JOIN cliente 
+                ON (cuenta_fintech.cliente_id = CLIENTE.id)
+                 WHERE cliente.identificacion = C_IDENT AND UPPER(cuenta_fintech.estado) != 'BAJA';
+        
+            IF (n_cuentas >= 0) THEN
+                UPDATE cliente
+                SET estado = 'BAJA',
+                    fecha_baja = CURRENT_DATE
+                WHERE CLIENTE.IDENTIFICACION = C_IDENT;
+                
+            END IF;
+            
+       EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+        
+      END BAJACLIENTE;
 
 
 
