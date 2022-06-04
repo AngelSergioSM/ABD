@@ -229,7 +229,7 @@ ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
 
 ALTER TABLE movimiento
     ADD CONSTRAINT tarjeta_fk FOREIGN KEY ( num_tarjeta )
-        REFERENCES tarjeta ( num_tarjeta )
+        REFERENCES tarjeta_credito ( num_tarjeta )
     NOT DEFERRABLE;
 
 
