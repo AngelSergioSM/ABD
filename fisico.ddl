@@ -174,7 +174,7 @@ CREATE TABLE autorizacion (
 ALTER TABLE autorizacion ADD CONSTRAINT autorización_pk PRIMARY KEY ( id);
 
 
-CREATE TABLE movimientos (
+CREATE TABLE movimiento (
     id                  VARCHAR2(20) NOT NULL,
     num_tarjeta         NUMBER(16,0) NOT NULL,
     divisa              VARCHAR2(20) NOT NULL,   
