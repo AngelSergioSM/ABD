@@ -219,7 +219,7 @@ CREATE TABLE movimiento (
     estado              VARCHAR2(20) NOT NULL,
     metodo                VARCHAR2(20),
     patron                VARCHAR2(20)
-)
+);
 
 ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
 
