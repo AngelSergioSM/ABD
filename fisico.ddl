@@ -174,7 +174,33 @@ CREATE TABLE autorizacion (
 ALTER TABLE autorizacion ADD CONSTRAINT autorización_pk PRIMARY KEY ( id);
 
 
------------------------------------------------------------------------------------------------------------------------
+CREATE TABLE movimientos (
+    id                  VARCHAR2(20) NOT NULL,
+    num_tarjeta         NUMBER(16,0) NOT NULL,
+    divisa              VARCHAR2(20) NOT NULL,   
+    fecha               DATE NOT NULL,
+    cantidad            NUMBER(9,0),
+    estado              VARCHAR2(20) NOT NULL,
+    metodo                VARCHAR2(20),
+    patron                VARCHAR2(20)
+)
+
+ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
+
+-----------------------------------------------------------------------------------------------------------
+
+
+
+ALTER TABLE movimiento
+    ADD CONSTRAINT tarjeta_fk FOREIGN KEY ( num_tarjeta )
+        REFERENCES tarjeta ( num_tarjeta )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE movimiento
+    ADD CONSTRAINT divisa_fk FOREIGN KEY ( divisa )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
 
 ALTER TABLE aplazado
     ADD CONSTRAINT aplazado_pago_credito_debito_fk FOREIGN KEY ( id_unico )
