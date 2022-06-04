@@ -58,7 +58,7 @@ ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( i
 
 
 CREATE TABLE autorizacion (
-    tipo        INTEGER NOT NULL,
+    tipo        	VARCHAR2(15) NOT NULL,
     persona_id          VARCHAR2(20) NOT NULL,
     empresa_id          VARCHAR2(30) NOT NULL
 );
