@@ -198,7 +198,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
         BEGIN
 	    COMMIT;
             SELECT COUNT(IDENTIFICACION) INTO X FROM CLIENTE WHERE C_IDENT=IDENTIFICACION;
-            IF(X<=0) THEN
+            IF(X=0) THEN
                 RAISE CLIENTE_NO_EXISTENTE_EXCEPTION;
             END IF;
             
