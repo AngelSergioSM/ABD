@@ -327,22 +327,22 @@ ALTER TABLE tarjeta_credito
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_cuenta_fk1 FOREIGN KEY ( cuenta_iban )
+    ADD CONSTRAINT transaccion_cuenta_fk1 FOREIGN KEY ( cuenta_iban_o )
         REFERENCES cuenta ( iban )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_cuenta_fk2 FOREIGN KEY ( cuenta_iban1 )
+    ADD CONSTRAINT transaccion_cuenta_fk2 FOREIGN KEY ( cuenta_iban_d )
         REFERENCES cuenta ( iban )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_divisa_fk1 FOREIGN KEY ( divisa_abreviatura )
+    ADD CONSTRAINT transaccion_divisa_fk1 FOREIGN KEY ( divisa_abreviatura_o )
         REFERENCES divisa ( abreviatura )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
-    ADD CONSTRAINT transaccion_divisa_fk2 FOREIGN KEY ( divisa_abreviatura1 )
+    ADD CONSTRAINT transaccion_divisa_fk2 FOREIGN KEY ( divisa_abreviatura_d )
         REFERENCES divisa ( abreviatura )
     NOT DEFERRABLE;
 
