@@ -317,13 +317,13 @@ ALTER TABLE segregada
     NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_iban )
+    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_id )
         REFERENCES cuenta ( iban )
     NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_id )
-        REFERENCES cuenta ( iban )
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cliente_id )
+        REFERENCES cliente ( id )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
