@@ -22,9 +22,9 @@ Virtualmente (_da la sensación de que_) sus cuentas están separadas, pero fís
 
 En una **cuenta segregada** solo se almacena el dinero de una persona por cuenta bancaria (**cuenta referencia**).
 
--> Una **cuenta fintech** puede tener el saldo en varias divisas
--> Pero... las **cuentas referencia** ("de verdad") están en UNA SOLA divisa
--> Solución: **DEPOSITADA_EN**
+- Una **cuenta fintech** puede tener el saldo en varias divisas
+- Pero... las **cuentas referencia** ("de verdad") están en UNA SOLA divisa
+- Solución: **DEPOSITADA_EN**
 
 
 ## Sobre las transacciones
