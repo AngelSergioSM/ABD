@@ -200,10 +200,10 @@ CREATE TABLE transaccion (
     tipo                          VARCHAR2(15) NOT NULL, -- REDUCIDO DE 50 A 15 (CARGO O INGRESO)
     comision                      NUMBER(6, 3), -- CAMBIADO
     internacional                 BLOB,
-    cuenta_iban1                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
-    cuenta_iban                   VARCHAR2(25) NOT NULL, -- CAMBIADO
-    divisa_abreviatura            VARCHAR2(10) NOT NULL,
-    divisa_abreviatura1           VARCHAR2(10) NOT NULL,
+    cuenta_iban_o                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
+    cuenta_iban_d                  VARCHAR2(25) NOT NULL, -- CAMBIADO
+    divisa_abreviatura_o           VARCHAR2(10) NOT NULL,
+    divisa_abreviatura_d          VARCHAR2(10) NOT NULL,
     tarjeta_credito_num_tarjeta  NUMBER(16) NOT NULL, -- CAMBIADO
     tarjeta_credito_cuenta_iban  VARCHAR2(25) NOT NULL -- CAMBIADO
 );
