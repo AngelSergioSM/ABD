@@ -83,7 +83,8 @@ END PK_GESTION_CLIENTES;
 
 create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
-        --RF2 FUNCIONAL
+--RF2 FUNCIONAL-------------------------------------------------------------------------------------------------------------------
+
         PROCEDURE ALTACLIENTE(C_ID  CLIENTE.ID%TYPE,
                               C_IDENT CLIENTE.IDENTIFICACION%TYPE,
                               C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
@@ -128,7 +129,10 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
   END ALTACLIENTE;
 
-        --RF3 FUNCIONAL
+--COMMIT;
+
+--RF3 FUNCIONAL---------------------------------------------------------------------------------------------------------------------------------
+
         PROCEDURE MODIFICACLIENTE(C_ID  CLIENTE.ID%TYPE,
                         C_IDENT CLIENTE.IDENTIFICACION%TYPE,
                         C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
@@ -190,7 +194,8 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
 --COMMIT;
 
---RF4
+--RF4----------------------------------------------------------------------------------------------------------------
+
         PROCEDURE BAJACLIENTE(C_IDENT  CLIENTE.IDENTIFICACION%TYPE)AS
         
         N_CUENTAS INT;
@@ -224,7 +229,8 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
 --COMMIT;
 
-  --RF6 FUNCIONAL
+--RF6 FUNCIONAL--------------------------------------------------------------------------------------------------------
+
   PROCEDURE AGREGARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
                         PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
                         PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
@@ -279,7 +285,8 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
 --COMMIT;
 
---RF7 FUNCIONAL
+--RF7 FUNCIONAL-------------------------------------------------------------------------------------------------------------------
+
     PROCEDURE MODIFICARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
                                 PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
                                 PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
@@ -328,7 +335,10 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
     END MODIFICARAUTORIZADO;
 
-      --RF8 FUNCIONAL
+--COMMIT;
+
+--RF8 FUNCIONAL---------------------------------------------------------------------------------------------------------------
+
       PROCEDURE BORRARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
                             AUTORIZACION_TIPO AUTORIZACION.TIPO%TYPE)AS
       
