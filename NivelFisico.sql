@@ -52,7 +52,7 @@ CREATE TABLE persona_autorizada (
     fecha_fin        DATE
 );
 
-ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id );
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
 
 ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
 
@@ -221,7 +221,7 @@ CREATE TABLE movimiento (
     patron                VARCHAR2(20)
 );
 
-ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
+ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
 
 
 -----------------------------------------------------------------------------------------------------------------------
