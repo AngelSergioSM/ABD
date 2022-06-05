@@ -159,8 +159,8 @@ CREATE TABLE pago_credito_debito (
     "dia_cobro/abono"    DATE,
     interes              NUMBER(3),
     modo_operacion       VARCHAR2(20) NOT NULL,
-    emisor_fisico        VARCHAR(5) NOT NULL, -- SI O NO
-    emisor_online        VARCHAR(5) NOT NULL -- SI O NO
+    emisor_fisico        VARCHAR2(5) NOT NULL, -- SI O NO
+    emisor_online        VARCHAR2(5) NOT NULL -- SI O NO
 );
 
 ALTER TABLE pago_credito_debito ADD CONSTRAINT pago_credito_debito_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
@@ -203,7 +203,7 @@ CREATE TABLE transaccion (
     fechaejecucion                DATE,
     tipo                          VARCHAR2(15) NOT NULL, -- REDUCIDO DE 50 A 15 (CARGO O INGRESO)
     comision                      NUMBER(6, 3), -- CAMBIADO
-    internacional                 VARCHAR(5),-- SI O NO
+    internacional                 VARCHAR2(5),-- SI O NO
     cuenta_iban_o                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
     cuenta_iban_d                  VARCHAR2(25) NOT NULL, -- CAMBIADO
     divisa_abreviatura_o           VARCHAR2(10) NOT NULL,
