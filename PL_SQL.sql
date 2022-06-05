@@ -370,10 +370,24 @@ END PK_GESTION_CLIENTES;
 
 
 
---=========================OPCIONAL===================
+-- =========================OPCIONAL===================
 -- 4. AUDITORÍAS
 AUDIT ALL ON FINTECH.TRANSACCION;
 AUDIT ALL ON FINTECH.MOVIMIENTO;
 
 AUDIT UPDATE, INSERT, DELETE ON FINTECH.DEPOSITADA_EN;
 AUDIT UPDATE, INSERT, DELETE ON FINTECH.CUENTA_REFERENCIA;
+
+---- DESDE SYSTEM --
+--Muestra la auditoría estándar:
+SELECT * FROM SYS.DBA_AUDIT_TRAIL;
+
+--Información relativa a la auditoría de los inicios de sesión de los usuarios
+SELECT * FROM SYS.DBA_AUDIT_SESSION;
+
+-- Ver que la auditoría AUDIT_TRAIL está activa:
+SELECT name, value
+FROM v$parameter
+WHERE NAME LIKE 'audit_trail';
+-- ====FIN AUDITORÍAS====
+
