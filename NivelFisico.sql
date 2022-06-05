@@ -73,11 +73,11 @@ CREATE TABLE autorizacion (
 CREATE TABLE cliente (
     id              VARCHAR2(30) NOT NULL,
     identificacion  VARCHAR2(40) NOT NULL,
-    tipo_cliente    VARCHAR2(10) NOT NULL,
+    tipo_cliente    VARCHAR2(40) NOT NULL, --cambiado de 10 a 40
     estado          VARCHAR2(10) NOT NULL,
     fecha_alta      DATE NOT NULL,
     fecha_baja      DATE,
-    direccion      VARCHAR2(20) NOT NULL,
+    direccion      VARCHAR2(40) NOT NULL, --cambiado de 20 a 40
     ciudad          VARCHAR2(20) NOT NULL,
     codigopostal    INTEGER NOT NULL,
     pais            VARCHAR2(20) NOT NULL
