@@ -316,8 +316,8 @@ ALTER TABLE segregada
 
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cliente_id )
-        REFERENCES cliente ( id )
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_iban )
+        REFERENCES cuenta ( iban )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
