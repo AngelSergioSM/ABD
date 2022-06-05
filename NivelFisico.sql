@@ -52,7 +52,7 @@ CREATE TABLE persona_autorizada (
     fecha_fin        DATE
 );
 
-ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id );
 
 ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
 
@@ -221,7 +221,7 @@ CREATE TABLE movimiento (
     patron                VARCHAR2(20)
 );
 
-ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
 
 
 -----------------------------------------------------------------------------------------------------------------------
@@ -317,13 +317,13 @@ ALTER TABLE segregada
     NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_iban )
+    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_id )
         REFERENCES cuenta ( iban )
     NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_id )
-        REFERENCES cuenta ( iban )
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cliente_id )
+        REFERENCES cliente ( id )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
@@ -409,3 +409,52 @@ CREATE MATERIALIZED VIEW VM_COTIZA REFRESH NEXT SYSDATE +1/24
 
 --EJERCICIO 7: SINÓNIMOS--------------------------------------------------------------
 CREATE SYNONYM COTIZACION FOR VM_COTIZA;
+
+
+
+
+--ENCRIPTADO--------------------------------------------------------------------
+
+
+---------- debemos encriptar todos los datos que den informacion personal de usuario o empresar
+---------- esta encriptacion no debe realizarse solo sobre los datos que nos permitirian acceder a
+---------- la cuenta de un titular sino tambien sobre aquellos datos personales que puedan realizarse 
+---------- para otros fines en un caso de robo de la base de datos.
+
+
+ALTER TABLE persona_autorizada MODIFY (
+    identificacion   ENCRYPT NO SALT,
+    nombre           ENCRYPT,
+    apellidos        VENCRYPT,
+    direccion        VENCRYPT,
+    fecha_nacimiento ENCRYPT
+);
+
+ALTER TABLE cliente MODIFY (
+
+    identificacion  ENCRYPT NO SALT,
+    direccion       ENCRYPT,
+    ciudad          ENCRYPT,
+    codigopostal    ENCRYPT,
+    pais            ENCRYPT
+);
+
+ALTER TABLE empresa MODIFY (
+    razon_social  ENCRYPT
+);
+
+CREATE TABLE individual MODIFY (
+    nombre            ENCRYPT,
+    apellido          ENCRYPT
+);
+
+
+---- Los datos necesarios para acceder para acceder son:
+
+ALTER TABLE TARJETAS MODIFY (
+cvc               ENCRYPT, --- imprecindible encriptar
+fecha_caducidad   ENCRYPT,
+nom_propietario   ENCRYPT
+);
+
+
