@@ -52,7 +52,7 @@ CREATE TABLE persona_autorizada (
     fecha_fin        DATE
 );
 
-ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id );
 
 ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
 
@@ -186,8 +186,6 @@ CREATE TABLE tarjeta_credito (
     limite_fisico     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_online     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_cajero     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
-    cliente_id        VARCHAR2(30) NOT NULL,
-    cuenta_id         VARCHAR2(25) NOT NULL
 );
 
 ALTER TABLE tarjeta_credito ADD CONSTRAINT tarjeta_credito_pk PRIMARY KEY (num_tarjeta) USING INDEX TABLESPACE TS_INDICES;
@@ -200,10 +198,10 @@ CREATE TABLE transaccion (
     tipo                          VARCHAR2(15) NOT NULL, -- REDUCIDO DE 50 A 15 (CARGO O INGRESO)
     comision                      NUMBER(6, 3), -- CAMBIADO
     internacional                 BLOB,
-    cuenta_iban1                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
-    cuenta_iban                   VARCHAR2(25) NOT NULL, -- CAMBIADO
-    divisa_abreviatura            VARCHAR2(10) NOT NULL,
-    divisa_abreviatura1           VARCHAR2(10) NOT NULL,
+    cuenta_iban_o                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
+    cuenta_iban_d                  VARCHAR2(25) NOT NULL, -- CAMBIADO
+    divisa_abreviatura_o           VARCHAR2(10) NOT NULL,
+    divisa_abreviatura_d          VARCHAR2(10) NOT NULL,
     tarjeta_credito_num_tarjeta  NUMBER(16) NOT NULL, -- CAMBIADO
     tarjeta_credito_cuenta_iban  VARCHAR2(25) NOT NULL -- CAMBIADO
 );
@@ -221,7 +219,7 @@ CREATE TABLE movimiento (
     patron                VARCHAR2(20)
 );
 
-ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
 
 
 -----------------------------------------------------------------------------------------------------------------------
@@ -316,14 +314,10 @@ ALTER TABLE segregada
         REFERENCES cuenta_referencia ( iban )
     NOT DEFERRABLE;
 
-ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_iban )
-        REFERENCES cuenta ( iban )
-    NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_id )
-        REFERENCES cuenta ( iban )
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cliente_id )
+        REFERENCES cliente ( id )
     NOT DEFERRABLE;
 
 ALTER TABLE transaccion
@@ -409,3 +403,52 @@ CREATE MATERIALIZED VIEW VM_COTIZA REFRESH NEXT SYSDATE +1/24
 
 --EJERCICIO 7: SINÓNIMOS--------------------------------------------------------------
 CREATE SYNONYM COTIZACION FOR VM_COTIZA;
+
+
+
+
+--ENCRIPTADO--------------------------------------------------------------------
+
+
+---------- debemos encriptar todos los datos que den informacion personal de usuario o empresar
+---------- esta encriptacion no debe realizarse solo sobre los datos que nos permitirian acceder a
+---------- la cuenta de un titular sino tambien sobre aquellos datos personales que puedan realizarse 
+---------- para otros fines en un caso de robo de la base de datos.
+
+
+ALTER TABLE persona_autorizada MODIFY (
+    identificacion   ENCRYPT NO SALT,
+    nombre           ENCRYPT,
+    apellidos        ENCRYPT,
+    direccion        ENCRYPT,
+    fecha_nacimiento ENCRYPT
+);
+
+ALTER TABLE cliente MODIFY (
+
+    identificacion  ENCRYPT NO SALT,
+    direccion       ENCRYPT,
+    ciudad          ENCRYPT,
+    codigopostal    ENCRYPT,
+    pais            ENCRYPT
+);
+
+ALTER TABLE empresa MODIFY (
+    razon_social  ENCRYPT
+);
+
+CREATE TABLE individual MODIFY (
+    nombre            ENCRYPT,
+    apellido          ENCRYPT
+);
+
+
+---- Los datos necesarios para acceder para acceder son:
+
+ALTER TABLE TARJETAS MODIFY (
+cvc               ENCRYPT, --- imprecindible encriptar
+fecha_caducidad   ENCRYPT,
+nom_propietario   ENCRYPT
+);
+
+
