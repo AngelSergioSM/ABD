@@ -425,8 +425,8 @@ CREATE SYNONYM COTIZACION FOR VM_COTIZA;
 ALTER TABLE persona_autorizada MODIFY (
     identificacion   ENCRYPT NO SALT,
     nombre           ENCRYPT,
-    apellidos        VENCRYPT,
-    direccion        VENCRYPT,
+    apellidos        ENCRYPT,
+    direccion        ENCRYPT,
     fecha_nacimiento ENCRYPT
 );
 
