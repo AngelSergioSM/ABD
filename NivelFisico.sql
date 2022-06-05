@@ -191,7 +191,7 @@ CREATE TABLE tarjeta_credito (
     modo_default      VARCHAR2(15) NOT NULL,
     limite_fisico     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_online     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
-    limite_cajero     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
+    limite_cajero     NUMBER(5) NOT NULL -- CAMBIADO DE 4 A 5
 );
 
 ALTER TABLE tarjeta_credito ADD CONSTRAINT tarjeta_credito_pk PRIMARY KEY (num_tarjeta) USING INDEX TABLESPACE TS_INDICES;
