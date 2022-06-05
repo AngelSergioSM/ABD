@@ -186,8 +186,6 @@ CREATE TABLE tarjeta_credito (
     limite_fisico     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_online     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
     limite_cajero     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
-    cliente_id        VARCHAR2(30) NOT NULL,
-    cuenta_id         VARCHAR2(25) NOT NULL
 );
 
 ALTER TABLE tarjeta_credito ADD CONSTRAINT tarjeta_credito_pk PRIMARY KEY (num_tarjeta) USING INDEX TABLESPACE TS_INDICES;
@@ -316,10 +314,6 @@ ALTER TABLE segregada
         REFERENCES cuenta_referencia ( iban )
     NOT DEFERRABLE;
 
-ALTER TABLE tarjeta_credito
-    ADD CONSTRAINT tarjeta_credito_cuenta_fk FOREIGN KEY ( cuenta_id )
-        REFERENCES cuenta ( iban )
-    NOT DEFERRABLE;
 
 ALTER TABLE tarjeta_credito
     ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cliente_id )
