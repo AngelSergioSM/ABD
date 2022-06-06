@@ -25,6 +25,7 @@ GRANT CREATE VIEW TO fintech; -- Crear vistas
 GRANT CREATE MATERIALIZED VIEW TO fintech; -- Crear vistas materializadas
 GRANT CREATE SEQUENCE TO fintech;
 GRANT CREATE ANY PROCEDURE TO fintech;
+GRANT CREATE ANY SYNONYM TO fintech;
     
 SELECT * FROM V$DATAFILE; -- verificar si existe un TS TS_FINTECH y TS_INDICES
 SELECT * FROM DBA_TABLESPACES WHERE TABLESPACE_NAME='TS_FINTECH' OR TABLESPACE_NAME='TS_INDICES'; -- otra forma
@@ -367,7 +368,7 @@ CREATE SEQUENCE SQ_PERSONA
 -- COMO SYSTEM
 -- De la MV descargada:
 -- Movemos el fichero de divisas
-create or replace directory directorio_ext as 'C:/Users/alumnos/Oracle/admin/orcl/dpdump';
+create or replace directory directorio_ext as 'C:/Users/alumnos/admin/orcl/dpdump';
 grant read, write on directory directorio_ext to FINTECH;
 -------
 
@@ -375,7 +376,7 @@ grant read, write on directory directorio_ext to FINTECH;
 -- (Mover cotizacion.csv al directorio)
 ------- DESDE FINTECH -----
 create table cotizacion_ext 
-        (nombre        NVARCHAR2(50) NOT NULL,
+        (nombre       NVARCHAR2(50),
         fecha         NVARCHAR2(50),
         Valor1Euro    NVARCHAR2(50),
         VariacionPorc NVARCHAR2(50),
@@ -388,11 +389,19 @@ create table cotizacion_ext
          access parameters
          ( records delimited by newline  
           skip 1 
-            -- characterset WE8ISO8859P1 
            fields terminated by ';' 
          )
          location ('cotizacion.csv')   
      ); 
+
+
+------DESDE FINTECH----
+--CREACION VISTA V_COTIZACIONES--
+create view v_cotizaciones as select d.abreviatura, d.nombre, d.simbolo,
+to_number( c.valoreneuros) cambioeuro, to_date (fecha,'dd/mm/yyyy') fecha
+from cotizacion_ext c join divisa d on c.nombre = d.nombre
+where (d.nombre,to_date (fecha,'dd/mm/yyyy')) in (select nombre, max ( to_date
+(fecha,'dd/mm/yyyy')) from cotizacion_ext group by nombre);
 
 
 -- 5. ÍNDICES
@@ -406,21 +415,11 @@ CREATE BITMAP INDEX index_bitmap ON divisa(SIMBOLO)
 
 --EJERCICIO 6: VISTA MATERIALIZADA--------------------------------------------------------------
 
-CREATE MATERIALIZED VIEW VM_COTIZA REFRESH NEXT SYSDATE +1/24
-	AS SELECT 
-		NOMBRE, 
-		FECHA,
-		VARIACIONPORC, 
-		VARIACIONMES, 
-		VARIACIONANIO, 
-		VALORENEUROS
-		FROM COTIZACION_EXT;
+CREATE MATERIALIZED VIEW VM_COTIZA REFRESH FORCE START WITH SYSDATE NEXT (SYSDATE +1)
+AS SELECT * FROM COTIZACION_EXT;
 
 --EJERCICIO 7: SINÓNIMOS--------------------------------------------------------------
 CREATE SYNONYM COTIZACION FOR VM_COTIZA;
-
-
-
 
 --ENCRIPTADO--------------------------------------------------------------------
 
