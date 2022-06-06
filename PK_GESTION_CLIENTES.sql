@@ -177,7 +177,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
     
    EXCEPTION
     WHEN OTHERS THEN
-        --ROLLBACK;
+        ROLLBACK;
         RAISE;
 
   END MODIFICACLIENTE;
@@ -212,7 +212,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
          
        EXCEPTION
     WHEN OTHERS THEN
-        --ROLLBACK;
+        ROLLBACK;
         RAISE;
         
       END BAJACLIENTE;
@@ -269,7 +269,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
         
      EXCEPTION
     WHEN OTHERS THEN
-        --ROLLBACK;
+        ROLLBACK;
         RAISE;
     END AGREGARAUTORIZADO;
 
@@ -322,7 +322,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
     EXCEPTION
     WHEN OTHERS THEN
-        --ROLLBACK;
+        ROLLBACK;
         RAISE;
 
 
@@ -359,7 +359,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
         
         EXCEPTION
             WHEN OTHERS THEN
-                --ROLLBACK;
+            ROLLBACK;
             RAISE;
         
       

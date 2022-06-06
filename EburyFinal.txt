@@ -1,0 +1,1181 @@
+-- 1. CREACION DEL USUARIO Y TABLESPACES
+-- DESDE SYSTEM
+
+--PARA LA MAQUINA INSTALADA
+CREATE TABLESPACE TS_FINTECH DATAFILE 'C:/Users/alumnos/Oracle/oradata/ORCL/FINTECH.DBF' SIZE 50M; -- CAMBIADO DE 10 A 50
+CREATE TABLESPACE TS_INDICES DATAFILE 'C:/Users/alumnos/Oracle/oradata/ORCL/INDICES.DBF' SIZE 50M; -- Crear TS_INDICES
+--PARA LA MAQUINA DEL CAMPUS
+CREATE TABLESPACE TS_FINTECH DATAFILE 'C:\Users\app\alumnos\oradata\ORCL\FINTECH.DBF' SIZE 50M; -- CAMBIADO DE 10 A 50
+CREATE TABLESPACE TS_INDICES DATAFILE 'C:\Users\app\alumnos\oradata\ORCL\INDICES.DBF' SIZE 50M; -- Crear TS_INDICES
+
+
+CREATE USER fintech IDENTIFIED BY bd
+    DEFAULT TABLESPACE TS_FINTECH
+    QUOTA 1M ON TS_FINTECH
+    QUOTA 45M ON TS_INDICES;
+
+GRANT CONNECT TO fintech;
+GRANT CREATE TABLE TO fintech; -- Crear tablas
+GRANT CREATE VIEW TO fintech; -- Crear vistas
+GRANT CREATE MATERIALIZED VIEW TO fintech; -- Crear vistas materializadas
+GRANT CREATE SEQUENCE TO fintech;
+GRANT CREATE ANY PROCEDURE TO fintech;
+GRANT CREATE ANY SYNONYM TO fintech;
+    
+SELECT * FROM V$DATAFILE; -- verificar si existe un TS TS_FINTECH y TS_INDICES
+SELECT * FROM DBA_TABLESPACES WHERE TABLESPACE_NAME='TS_FINTECH' OR TABLESPACE_NAME='TS_INDICES'; -- otra forma
+
+SELECT username, default_tablespace FROM dba_users WHERE username = 'FINTECH'; -- Verificar que el TS por default de FINTECH ES TS_FINTECH
+
+-- En este punto hay que revisar el modelo (tablas ddl). Se crearán índices y se meterán en TS_INDICES
+
+
+-- 2. GENERACION DE TABLAS CON INDICES EN TS_INDICES
+-- DESDE FINTECH
+
+-- Y esta tabla?
+CREATE TABLE aplazado (
+    id_unico     VARCHAR2(30) NOT NULL,
+    mensualidad  DATE
+); -- AQUI HAY CAMBIOS RESPECTO EL DRIVE
+
+ALTER TABLE aplazado ADD CONSTRAINT aplazado_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
+
+
+CREATE TABLE persona_autorizada (
+    id               VARCHAR2(20) NOT NULL,
+    identificacion   VARCHAR2(20) NOT NULL,
+    nombre           VARCHAR2(20) NOT NULL,
+    apellidos        VARCHAR2(20) NOT NULL,
+    direccion        VARCHAR2(30) NOT NULL,
+    fecha_nacimiento DATE,
+    fecha_inicio     DATE,
+    estado           VARCHAR2(20),
+    fecha_fin        DATE
+);
+
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_pk PRIMARY KEY ( id );
+
+ALTER TABLE persona_autorizada ADD CONSTRAINT persona_autorizada_id_u UNIQUE ( identificacion );
+
+
+CREATE TABLE autorizacion (
+    tipo        	VARCHAR2(15) NOT NULL,
+    persona_id          VARCHAR2(20) NOT NULL,
+    empresa_id          VARCHAR2(30) NOT NULL
+);
+
+
+CREATE TABLE cliente (
+    id              VARCHAR2(30) NOT NULL,
+    identificacion  VARCHAR2(40) NOT NULL,
+    tipo_cliente    VARCHAR2(40) NOT NULL, --cambiado de 10 a 40
+    estado          VARCHAR2(10) NOT NULL,
+    fecha_alta      DATE NOT NULL,
+    fecha_baja      DATE,
+    direccion      VARCHAR2(40) NOT NULL, --cambiado de 20 a 40
+    ciudad          VARCHAR2(20) NOT NULL,
+    codigopostal    INTEGER NOT NULL,
+    pais            VARCHAR2(20) NOT NULL
+); -- AQUI HAY CAMBIOS RESPECTO EL DRIVE
+
+ALTER TABLE cliente ADD CONSTRAINT cliente_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+
+ALTER TABLE cliente ADD CONSTRAINT cliente_identificacion_un UNIQUE ( identificacion ) USING INDEX TABLESPACE TS_INDICES;
+
+
+CREATE TABLE cuenta (
+    iban   VARCHAR2(25) NOT NULL, -- AQUI HAY CAMBIOS. LE HE SUBIDO LONGITUD IBAN
+    swift  VARCHAR2(20)
+);
+
+ALTER TABLE cuenta ADD CONSTRAINT cuenta_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE cuenta_fintech (
+    iban            VARCHAR2(25) NOT NULL, -- CAMBIOS
+    estado          VARCHAR2(20) NOT NULL,
+    fecha_apertura  DATE NOT NULL,
+    fecha_cierre    DATE,
+    clasificacion   VARCHAR2(10),
+    cliente_id      VARCHAR2(30) NOT NULL -- Para la relacion Many2One
+);
+
+ALTER TABLE cuenta_fintech ADD CONSTRAINT cuenta_fintech_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
+
+-- ESTA TABLA???
+CREATE TABLE cuenta_referencia (
+    iban                VARCHAR2(25) NOT NULL, -- CAMBIOS
+    nombrebanco         VARCHAR2(10) NOT NULL,
+    sucursal            VARCHAR2(15),
+    pais                VARCHAR2(20),
+    saldo               NUMBER(20, 6) NOT NULL, -- CAMBIADO. NO TENIA SENTIDO
+    fecha_apertura      DATE,
+    estado              VARCHAR2(20),
+    divisa_abreviatura  VARCHAR2(10) NOT NULL -- Para la relación Many2One
+);
+
+ALTER TABLE cuenta_referencia ADD CONSTRAINT cuenta_referencia_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE depositada_en (
+    saldo                   NUMBER(20, 6) NOT NULL, -- CAMBIADO. MAS PRECISION
+    cuenta_referencia_iban  VARCHAR2(25) NOT NULL, -- CAMBIADO
+    pooled_account_iban      VARCHAR2(25) NOT NULL -- CAMBIADO
+);
+
+CREATE TABLE divisa (
+    abreviatura  VARCHAR2(10) NOT NULL,
+    nombre       VARCHAR2(30) NOT NULL, -- CAMBIADO
+    simbolo      VARCHAR2(5 CHAR), -- CAMBIADO
+    cambioeuro   NUMBER(30, 25) NOT NULL
+);                                                                    
+
+
+ALTER TABLE divisa ADD CONSTRAINT divisa_pk PRIMARY KEY ( abreviatura ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE empresa (
+    id            VARCHAR2(30) NOT NULL,
+    razon_social  VARCHAR2(50) NOT NULL
+);
+
+ALTER TABLE empresa ADD CONSTRAINT empresa_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE individual (
+    id                VARCHAR2(30) NOT NULL,
+    nombre            VARCHAR2(20) NOT NULL,
+    apellido          VARCHAR2(30) NOT NULL,
+    fecha_nacimiento  DATE
+);
+
+ALTER TABLE individual ADD CONSTRAINT individual_pk PRIMARY KEY ( id ) USING INDEX TABLESPACE TS_INDICES;
+
+-- Aqui estamos jugando con fuego
+CREATE TABLE pago_credito_debito (
+    id_unico             VARCHAR2(30) NOT NULL,
+    periodo_liquidacion  DATE,
+    "dia_cobro/abono"    DATE,
+    interes              NUMBER(3),
+    modo_operacion       VARCHAR2(20) NOT NULL,
+    emisor_fisico        VARCHAR2(5) NOT NULL, -- SI O NO
+    emisor_online        VARCHAR2(5) NOT NULL -- SI O NO
+);
+
+ALTER TABLE pago_credito_debito ADD CONSTRAINT pago_credito_debito_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE pooled_account (
+    iban VARCHAR2(25) NOT NULL -- CAMBIADO
+);
+
+ALTER TABLE pooled_account ADD CONSTRAINT pooled_account_pk PRIMARY KEY ( iban ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE segregada (
+    iban                    VARCHAR2(25) NOT NULL, -- CAMBIADO
+    comision                NUMBER(9, 3),
+    cuenta_referencia_iban  VARCHAR2(25) NOT NULL -- CAMBIADO
+);
+
+-- ?
+-- CREATE UNIQUE INDEX segregada__idx ON segregada ( ASC(cuenta_referencia_iban)  ) USING INDEX TABLESPACE TS_INDICES;
+
+-- NOMBRE CAMBIADO A SINGULAR
+CREATE TABLE tarjeta_credito (
+    num_tarjeta       NUMBER(20) NOT NULL, -- CAMBIADO
+    cvc               NUMBER(3) NOT NULL,
+    fecha_caducidad   DATE NOT NULL,
+    nom_propietario   VARCHAR2(20) NOT NULL,
+    fecha_activacion  DATE NOT NULL,
+    cuenta_iban       VARCHAR2(25) NOT NULL, -- CAMBIADO
+    modo_default      VARCHAR2(15) NOT NULL,
+    limite_fisico     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
+    limite_online     NUMBER(5) NOT NULL, -- CAMBIADO DE 4 A 5
+    limite_cajero     NUMBER(5) NOT NULL -- CAMBIADO DE 4 A 5
+);
+
+ALTER TABLE tarjeta_credito ADD CONSTRAINT tarjeta_credito_pk PRIMARY KEY (num_tarjeta) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE transaccion (
+    id_unico                      VARCHAR2(30) NOT NULL,
+    fechainstruccion              DATE NOT NULL,
+    cantidad                      INTEGER NOT NULL,
+    fechaejecucion                DATE,
+    tipo                          VARCHAR2(15) NOT NULL, -- REDUCIDO DE 50 A 15 (CARGO O INGRESO)
+    comision                      NUMBER(6, 3), -- CAMBIADO
+    internacional                 VARCHAR2(5),-- SI O NO
+    cuenta_iban_o                  VARCHAR2(25) NOT NULL, -- CAMBIADO.( SERIA MEJOR iban_destino y iban_origen)
+    cuenta_iban_d                  VARCHAR2(25) NOT NULL, -- CAMBIADO
+    divisa_abreviatura_o           VARCHAR2(10) NOT NULL,
+    divisa_abreviatura_d          VARCHAR2(10) NOT NULL,
+    tarjeta_credito_num_tarjeta  NUMBER(16) NOT NULL, -- CAMBIADO
+    tarjeta_credito_cuenta_iban  VARCHAR2(25) NOT NULL -- CAMBIADO
+);
+
+ALTER TABLE transaccion ADD CONSTRAINT transaccion_pk PRIMARY KEY ( id_unico ) USING INDEX TABLESPACE TS_INDICES;
+
+CREATE TABLE movimiento (
+    id                  VARCHAR2(20) NOT NULL,
+    num_tarjeta         NUMBER(16,0) NOT NULL,
+    divisa              VARCHAR2(20) NOT NULL,   
+    fecha               DATE NOT NULL,
+    cantidad            NUMBER(9,0),
+    estado              VARCHAR2(20) NOT NULL,
+    metodo                VARCHAR2(20),
+    patron                VARCHAR2(20)
+);
+
+ALTER TABLE movimiento ADD CONSTRAINT movimientos_pk PRIMARY KEY ( id );
+
+
+-----------------------------------------------------------------------------------------------------------------------
+
+
+ALTER TABLE movimiento
+    ADD CONSTRAINT tarjeta_fk FOREIGN KEY ( num_tarjeta )
+        REFERENCES tarjeta_credito ( num_tarjeta )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE movimiento
+    ADD CONSTRAINT divisa_fk FOREIGN KEY ( divisa )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE aplazado
+    ADD CONSTRAINT aplazado_pago_credito_debito_fk FOREIGN KEY ( id_unico )
+        REFERENCES pago_credito_debito ( id_unico );
+
+ALTER TABLE autorizacion
+    ADD CONSTRAINT autorización_empresa_fk FOREIGN KEY ( empresa_id )
+        REFERENCES empresa ( id )
+    NOT DEFERRABLE;
+
+ALTER TABLE autorizacion
+    ADD CONSTRAINT autorizacion_persona_fk FOREIGN KEY ( persona_id )
+        REFERENCES persona_autorizada ( id )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE cuenta_fintech
+    ADD CONSTRAINT cuenta_fintech_cliente_fk FOREIGN KEY ( cliente_id )
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
+
+ALTER TABLE cuenta_fintech
+    ADD CONSTRAINT cuenta_fintech_cuenta_fk FOREIGN KEY ( iban )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE cuenta_referencia
+    ADD CONSTRAINT cuenta_referencia_cuenta_fk FOREIGN KEY ( iban )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE cuenta_referencia
+    ADD CONSTRAINT cuenta_referencia_divisa_fk FOREIGN KEY ( divisa_abreviatura )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
+
+ 
+ALTER TABLE depositada_en
+    ADD CONSTRAINT depositada_en_cuenta_referencia_fk FOREIGN KEY ( cuenta_referencia_iban )
+        REFERENCES cuenta_referencia ( iban )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE depositada_en
+    ADD CONSTRAINT depositada_en_pooled_account_fk FOREIGN KEY ( pooled_account_iban )
+        REFERENCES pooled_account ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE empresa
+    ADD CONSTRAINT empresa_cliente_fk FOREIGN KEY ( id )
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
+
+ALTER TABLE individual
+    ADD CONSTRAINT individual_cliente_fk FOREIGN KEY ( id )
+        REFERENCES cliente ( id )
+    NOT DEFERRABLE;
+ 
+ALTER TABLE pago_credito_debito
+    ADD CONSTRAINT pago_credito_debito_transaccion_fk FOREIGN KEY ( id_unico )
+        REFERENCES transaccion ( id_unico );
+
+ 
+ALTER TABLE pooled_account
+    ADD CONSTRAINT pooled_account_cuenta_fintech_fk FOREIGN KEY ( iban )
+        REFERENCES cuenta_fintech ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE segregada
+    ADD CONSTRAINT segregada_cuenta_fintech_fk FOREIGN KEY ( iban )
+        REFERENCES cuenta_fintech ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE segregada
+    ADD CONSTRAINT segregada_cuenta_referencia_fk FOREIGN KEY ( cuenta_referencia_iban )
+        REFERENCES cuenta_referencia ( iban )
+    NOT DEFERRABLE;
+
+
+ALTER TABLE tarjeta_credito
+    ADD CONSTRAINT tarjetas_cuenta_fk FOREIGN KEY ( cuenta_iban )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE transaccion
+    ADD CONSTRAINT transaccion_cuenta_fk1 FOREIGN KEY ( cuenta_iban_o )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE transaccion
+    ADD CONSTRAINT transaccion_cuenta_fk2 FOREIGN KEY ( cuenta_iban_d )
+        REFERENCES cuenta ( iban )
+    NOT DEFERRABLE;
+
+ALTER TABLE transaccion
+    ADD CONSTRAINT transaccion_divisa_fk1 FOREIGN KEY ( divisa_abreviatura_o )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
+
+ALTER TABLE transaccion
+    ADD CONSTRAINT transaccion_divisa_fk2 FOREIGN KEY ( divisa_abreviatura_d )
+        REFERENCES divisa ( abreviatura )
+    NOT DEFERRABLE;
+
+ALTER TABLE transaccion
+    ADD CONSTRAINT transaccion_tarjeta_credito_fk FOREIGN KEY ( tarjeta_credito_num_tarjeta)
+        REFERENCES tarjeta_credito ( num_tarjeta);
+
+--SECUENCIAS
+CREATE SEQUENCE SQ_CLIENTE
+	START WITH 10;
+    
+CREATE SEQUENCE SQ_PERSONA
+	START WITH 10;
+
+
+
+
+-- 3. IMPORTACIÓN DE DATOS 
+-- En las tablas del usuario, click derecho en DIVISA (de fintech), importar datos...
+
+-- 4. TABLAS EXTERNAS
+-- COMO SYSTEM
+-- De la MV descargada:
+-- Movemos el fichero de divisas
+create or replace directory directorio_ext as 'C:/Users/alumnos/admin/orcl/dpdump';
+grant read, write on directory directorio_ext to FINTECH;
+-------
+
+-- 4.6
+-- (Mover cotizacion.csv al directorio)
+------- DESDE FINTECH -----
+create table cotizacion_ext 
+        (nombre       NVARCHAR2(50),
+        fecha         NVARCHAR2(50),
+        Valor1Euro    NVARCHAR2(50),
+        VariacionPorc NVARCHAR2(50),
+        VariacionMes  NVARCHAR2(50),
+        variacionanio NVARCHAR2(50),
+        ValorenEuros  NVARCHAR2(50))
+        
+        organization external
+       ( default directory directorio_ext
+         access parameters
+         ( records delimited by newline  
+          skip 1 
+           fields terminated by ';' 
+         )
+         location ('cotizacion.csv')   
+     ); 
+
+
+------DESDE FINTECH----
+--CREACION VISTA V_COTIZACIONES--
+create view v_cotizaciones as select d.abreviatura, d.nombre, d.simbolo,
+to_number( c.valoreneuros) cambioeuro, to_date (fecha,'dd/mm/yyyy') fecha
+from cotizacion_ext c join divisa d on c.nombre = d.nombre
+where (d.nombre,to_date (fecha,'dd/mm/yyyy')) in (select nombre, max ( to_date
+(fecha,'dd/mm/yyyy')) from cotizacion_ext group by nombre);
+
+
+-- 5. ÍNDICES
+------- DESDE FINTECH -----
+
+CREATE INDEX cliente_id_index ON cliente (id) TABLESPACE TS_INDICES;
+CREATE OR REPLACE INDEX cliente_identificacion_index ON cliente (identificacion)TABLESPACE TS_INDICES;
+CREATE INDEX cliente_estado_index ON cliente (estado)TABLESPACE TS_INDICES;
+CREATE INDEX cliente_function_index ON cliente(upper(identificacion))TABLESPACE TS_INDICES;
+CREATE BITMAP INDEX index_bitmap ON divisa(SIMBOLO)
+
+--EJERCICIO 6: VISTA MATERIALIZADA--------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW VM_COTIZA REFRESH FORCE START WITH SYSDATE NEXT (SYSDATE +1)
+AS SELECT * FROM COTIZACION_EXT;
+
+--EJERCICIO 7: SINÓNIMOS--------------------------------------------------------------
+CREATE SYNONYM COTIZACION FOR VM_COTIZA;
+
+--ENCRIPTADO--------------------------------------------------------------------
+
+
+---------- debemos encriptar todos los datos que den informacion personal de usuario o empresar
+---------- esta encriptacion no debe realizarse solo sobre los datos que nos permitirian acceder a
+---------- la cuenta de un titular sino tambien sobre aquellos datos personales que puedan realizarse 
+---------- para otros fines en un caso de robo de la base de datos.
+
+
+ALTER TABLE persona_autorizada MODIFY (
+    identificacion   ENCRYPT NO SALT,
+    nombre           ENCRYPT,
+    apellidos        ENCRYPT,
+    direccion        ENCRYPT,
+    fecha_nacimiento ENCRYPT
+);
+
+ALTER TABLE cliente MODIFY (
+
+    identificacion  ENCRYPT NO SALT,
+    direccion       ENCRYPT,
+    ciudad          ENCRYPT,
+    codigopostal    ENCRYPT,
+    pais            ENCRYPT
+);
+
+ALTER TABLE empresa MODIFY (
+    razon_social  ENCRYPT
+);
+
+CREATE TABLE individual MODIFY (
+    nombre            ENCRYPT,
+    apellido          ENCRYPT
+);
+
+
+---- Los datos necesarios para acceder para acceder son:
+
+ALTER TABLE TARJETAS MODIFY (
+cvc               ENCRYPT, --- imprecindible encriptar
+fecha_caducidad   ENCRYPT,
+nom_propietario   ENCRYPT
+);
+
+
+
+--CABEZERAS
+-- PK_GESTION_CLIENTES
+
+create or replace PACKAGE PK_GESTION_CLIENTES AS 
+
+    --RF2 FUNCIONAL
+    PROCEDURE ALTACLIENTE(C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+                        C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
+                        C_ESTADO CLIENTE.ESTADO%TYPE,
+                        C_FA CLIENTE.FECHA_ALTA%TYPE,
+                        C_DIR CLIENTE.DIRECCION%TYPE,
+                        C_CIUDAD CLIENTE.CIUDAD%TYPE,
+                        C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
+                        C_PAIS CLIENTE.PAIS%TYPE,
+                        E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
+                        I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
+                        I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
+                        I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE);
+
+        --RF3 FUNCIONAL
+        PROCEDURE MODIFICACLIENTE(C_ID  CLIENTE.ID%TYPE,
+                        C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+                        C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
+                        C_ESTADO CLIENTE.ESTADO%TYPE,
+                        C_FA CLIENTE.FECHA_ALTA%TYPE,
+                        C_DIR CLIENTE.DIRECCION%TYPE,
+                        C_CIUDAD CLIENTE.CIUDAD%TYPE,
+                        C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
+                        C_PAIS CLIENTE.PAIS%TYPE,
+                        E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
+                        I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
+                        I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
+                        I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE);
+
+        --RF4
+        PROCEDURE BAJACLIENTE(C_IDENT  CLIENTE.IDENTIFICACION%TYPE);
+
+        
+        --RF6 FUNCIONAL
+       PROCEDURE AGREGARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
+                        PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
+                        PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
+                        PA_APELLIDOS PERSONA_AUTORIZADA.APELLIDOS%TYPE,
+                        PA_DIR PERSONA_AUTORIZADA.DIRECCION%TYPE,
+                        PA_FN PERSONA_AUTORIZADA.FECHA_NACIMIENTO%TYPE,
+                        PA_ESTADO PERSONA_AUTORIZADA.ESTADO%TYPE,
+                        E_ID EMPRESA.ID%TYPE,
+                        AUTORIZACION_TIPO Autorizacion.TIPO%TYPE);
+
+
+
+--RF7 FUNCIONAL
+        PROCEDURE MODIFICARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
+                                PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
+                                PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
+                                PA_APELLIDOS PERSONA_AUTORIZADA.APELLIDOS%TYPE,
+                                PA_DIR PERSONA_AUTORIZADA.DIRECCION%TYPE,
+                                PA_FN PERSONA_AUTORIZADA.FECHA_NACIMIENTO%TYPE,
+                                PA_ESTADO PERSONA_AUTORIZADA.ESTADO%TYPE,
+                                E_ID EMPRESA.ID%TYPE,
+                                AUTORIZACION_TIPO AUTORIZACION.TIPO%TYPE);
+
+
+      --RF8 FUNCIONAL
+      PROCEDURE BORRARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
+                            AUTORIZACION_TIPO AUTORIZACION.TIPO%TYPE);
+
+
+
+
+CLIENTE_NO_VALIDO_EXCEPTION EXCEPTION;
+CLIENTE_NO_EXISTENTE_EXCEPTION EXCEPTION;
+TIPO_NO_VALIDO_EXCEPTION EXCEPTION;
+TIPO_AUTORIZACION_NO_VALIDO_EXCEPTION EXCEPTION;
+NO_AUTORIZADOS_EXCEPTION EXCEPTION;
+
+
+END PK_GESTION_CLIENTES;
+
+
+
+--/****************************************************************************************************************************************************\
+
+--CUERPOS
+
+create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
+
+--RF2 FUNCIONAL-------------------------------------------------------------------------------------------------------------------
+
+       PROCEDURE ALTACLIENTE(C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+                        C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
+                        C_ESTADO CLIENTE.ESTADO%TYPE,
+                        C_FA CLIENTE.FECHA_ALTA%TYPE,
+                        C_DIR CLIENTE.DIRECCION%TYPE,
+                        C_CIUDAD CLIENTE.CIUDAD%TYPE,
+                        C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
+                        C_PAIS CLIENTE.PAIS%TYPE,
+                        E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
+                        I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
+                        I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
+                        I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE) AS
+                        
+  ID_CLIENTE CLIENTE.ID%TYPE;
+
+  BEGIN
+      
+        ID_CLIENTE:=SQ_CLIENTE.NEXTVAL;
+    
+      INSERT INTO CLIENTE(ID, IDENTIFICACION, TIPO_CLIENTE, ESTADO, FECHA_ALTA, DIRECCION, CIUDAD, CODIGOPOSTAL, PAIS) VALUES(
+                        ID_CLIENTE,C_IDENT,C_TIPO,C_ESTADO,C_FA, C_DIR, C_CIUDAD, C_POSTAL, C_PAIS);
+      IF(C_TIPO='INDIVIDUAL') THEN
+        INSERT INTO INDIVIDUAL(ID, NOMBRE, APELLIDO, FECHA_NACIMIENTO) VALUES(
+                              ID_CLIENTE, I_NOMBRE, I_APELLIDO, I_FN);
+      ELSIF(C_TIPO='EMPRESA') THEN
+        INSERT INTO EMPRESA (ID, RAZON_SOCIAL) VALUES(
+                             ID_CLIENTE, E_RAZON);
+      ELSE
+        RAISE CLIENTE_NO_VALIDO_EXCEPTION;
+      END IF;
+  END ALTACLIENTE;
+
+--COMMIT;
+
+--RF3 FUNCIONAL---------------------------------------------------------------------------------------------------------------------------------
+
+        PROCEDURE MODIFICACLIENTE(C_ID  CLIENTE.ID%TYPE,
+                        C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+                        C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
+                        C_ESTADO CLIENTE.ESTADO%TYPE,
+                        C_FA CLIENTE.FECHA_ALTA%TYPE,
+                        C_DIR CLIENTE.DIRECCION%TYPE,
+                        C_CIUDAD CLIENTE.CIUDAD%TYPE,
+                        C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
+                        C_PAIS CLIENTE.PAIS%TYPE,
+                        E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
+                        I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
+                        I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
+                        I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE)AS
+    X INT;
+
+  BEGIN
+       
+       SELECT COUNT(ID) INTO X FROM CLIENTE WHERE C_ID=ID;
+      IF(X<=0) THEN
+        RAISE CLIENTE_NO_EXISTENTE_EXCEPTION;
+      END IF;
+    	UPDATE CLIENTE SET ID = C_ID,
+                IDENTIFICACION=C_IDENT,
+            	TIPO_CLIENTE = C_TIPO,
+            	ESTADO = C_ESTADO,
+            	FECHA_ALTA = C_FA,
+            	DIRECCION = C_DIR,
+            	CIUDAD = C_CIUDAD,
+            	CODIGOPOSTAL = C_POSTAL,
+            	PAIS = C_PAIS
+    	WHERE CLIENTE.ID = C_ID;
+   	 
+     
+        IF(C_TIPO='INDIVIDUAL') THEN
+            UPDATE INDIVIDUAL
+        	SET ID = C_ID,
+                	NOMBRE = I_NOMBRE,
+                	APELLIDO = I_APELLIDO,
+                	FECHA_NACIMIENTO = I_FN
+        	WHERE INDIVIDUAL.ID = C_ID;
+            
+        ELSIF(C_TIPO='EMPRESA') THEN
+        	UPDATE EMPRESA
+        	SET ID = C_ID,
+                	RAZON_SOCIAL = E_RAZON
+        	WHERE EMPRESA.ID = C_ID;
+            
+    	ELSE
+        	RAISE TIPO_NO_VALIDO_EXCEPTION;
+            
+        END IF;
+    
+   EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+
+  END MODIFICACLIENTE;
+
+--COMMIT;
+
+--RF4----------------------------------------------------------------------------------------------------------------
+
+        PROCEDURE BAJACLIENTE(C_IDENT  CLIENTE.IDENTIFICACION%TYPE)AS
+        
+        N_CUENTAS INT;
+        X INT;
+        BEGIN
+	    
+            SELECT COUNT(IDENTIFICACION) INTO X FROM CLIENTE WHERE C_IDENT=IDENTIFICACION;
+            IF(X=0) THEN
+                RAISE CLIENTE_NO_EXISTENTE_EXCEPTION;
+            END IF;
+            
+            SELECT COUNT(*) INTO N_CUENTAS 
+             FROM CUENTA_FINTECH INNER JOIN CLIENTE
+                ON (CUENTA_FINTECH.CLIENTE_ID = CLIENTE.ID)
+                 WHERE CLIENTE.IDENTIFICACION = C_IDENT AND UPPER(CUENTA_FINTECH.ESTADO) != 'BAJA';
+        
+            IF (n_cuentas <= 0) THEN
+                UPDATE cliente
+                SET estado = 'BAJA',
+                    fecha_baja = CURRENT_DATE
+                WHERE CLIENTE.IDENTIFICACION = C_IDENT;
+                
+            END IF;
+         
+       EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+        
+      END BAJACLIENTE;
+
+--COMMIT;
+
+--RF6 FUNCIONAL--------------------------------------------------------------------------------------------------------
+
+  PROCEDURE AGREGARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
+                        PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
+                        PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
+                        PA_APELLIDOS PERSONA_AUTORIZADA.APELLIDOS%TYPE,
+                        PA_DIR PERSONA_AUTORIZADA.DIRECCION%TYPE,
+                        PA_FN PERSONA_AUTORIZADA.FECHA_NACIMIENTO%TYPE,
+                        PA_ESTADO PERSONA_AUTORIZADA.ESTADO%TYPE,
+                        E_ID EMPRESA.ID%TYPE,
+                        AUTORIZACION_TIPO Autorizacion.TIPO%TYPE)AS
+    X_PA INT;
+    X_AUT INT;
+    ID_PA PERSONA_AUTORIZADA.ID%TYPE;
+	BEGIN
+		
+		IF (AUTORIZACION_TIPO != 'CONSULTA' AND
+            AUTORIZACION_TIPO != 'OPERACION') THEN
+			RAISE TIPO_AUTORIZACION_NO_VALIDO_EXCEPTION;
+		END IF;
+        
+		SELECT COUNT(*) INTO X_PA FROM PERSONA_AUTORIZADA
+		 WHERE PERSONA_AUTORIZADA.IDENTIFICACION = PA_IDENT;
+
+		IF (X_PA = 0) THEN
+        
+      ID_PA:= SQ_PERSONA.NEXTVAL;
+            
+			INSERT INTO PERSONA_AUTORIZADA(ID, IDENTIFICACION, NOMBRE, APELLIDOS, DIRECCION, FECHA_NACIMIENTO, FECHA_INICIO, ESTADO)
+			VALUES ( ID_PA, PA_IDENT, PA_NOMBRE, PA_APELLIDOS, PA_DIR, PA_FN, CURRENT_DATE, PA_ESTADO);
+
+			INSERT INTO AUTORIZACION(TIPO, PERSONA_ID, EMPRESA_ID) 
+			VALUES (AUTORIZACION_TIPO, ID_PA, E_ID);
+		ELSE
+			SELECT COUNT(*) INTO X_AUT
+			FROM AUTORIZACION
+			WHERE PERSONA_ID = PA_ID 
+                    AND EMPRESA_ID = E_ID;
+
+			IF X_AUT != 0 THEN
+				UPDATE AUTORIZACION
+				SET TIPO = AUTORIZACION_TIPO;
+			ELSE
+				INSERT INTO AUTORIZACION(TIPO, PERSONA_ID, EMPRESA_ID)
+				VALUES (AUTORIZACION_TIPO, PA_ID, E_ID);
+			END IF;
+		END IF;	
+        
+     EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+    END AGREGARAUTORIZADO;
+
+--COMMIT;
+
+--RF7 FUNCIONAL-------------------------------------------------------------------------------------------------------------------
+
+    PROCEDURE MODIFICARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE,
+                                PA_IDENT PERSONA_AUTORIZADA.IDENTIFICACION%TYPE,
+                                PA_NOMBRE PERSONA_AUTORIZADA.NOMBRE%TYPE,
+                                PA_APELLIDOS PERSONA_AUTORIZADA.APELLIDOS%TYPE,
+                                PA_DIR PERSONA_AUTORIZADA.DIRECCION%TYPE,
+                                PA_FN PERSONA_AUTORIZADA.FECHA_NACIMIENTO%TYPE,
+                                PA_ESTADO PERSONA_AUTORIZADA.ESTADO%TYPE,
+                                E_ID EMPRESA.ID%TYPE,
+                                AUTORIZACION_TIPO AUTORIZACION.TIPO%TYPE)AS
+    
+    X_PA NUMBER(3,0);
+    X_AUT NUMBER(3,0);
+    BEGIN
+                                
+      SELECT COUNT(*) INTO X_PA FROM PERSONA_AUTORIZADA
+      WHERE PERSONA_AUTORIZADA.ID = PA_ID
+      AND PERSONA_AUTORIZADA.IDENTIFICACION=PA_IDENT;
+      
+      IF(X_PA=0) THEN
+          RAISE NO_AUTORIZADOS_EXCEPTION;
+      END IF;
+      SELECT COUNT(*) INTO X_AUT FROM AUTORIZACION
+      WHERE AUTORIZACION.PERSONA_ID = PA_ID;
+      IF(X_AUT=0) THEN
+          RAISE NO_AUTORIZADOS_EXCEPTION;
+      END IF;
+
+      IF (AUTORIZACION_TIPO != 'CONSULTA' AND
+            AUTORIZACION_TIPO != 'OPERACION') THEN
+			  RAISE TIPO_AUTORIZACION_NO_VALIDO_EXCEPTION;
+		  END IF;
+
+      UPDATE PERSONA_AUTORIZADA SET NOMBRE=PA_NOMBRE,
+          APELLIDOS=PA_APELLIDOS,
+          DIRECCION=PA_DIR,
+          FECHA_NACIMIENTO=PA_FN,
+          ESTADO=PA_ESTADO
+        WHERE PERSONA_AUTORIZADA.IDENTIFICACION = PA_IDENT;
+      
+      UPDATE AUTORIZACION SET TIPO = AUTORIZACION_TIPO
+        WHERE AUTORIZACION.PERSONA_ID = PA_ID
+          AND AUTORIZACION.EMPRESA_ID=E_ID;
+
+    EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        RAISE;
+
+
+    END MODIFICARAUTORIZADO;
+
+--COMMIT;
+
+--RF8 FUNCIONAL---------------------------------------------------------------------------------------------------------------
+ PROCEDURE BORRARAUTORIZADO(PA_ID PERSONA_AUTORIZADA.ID%TYPE)IS
+    
+    AUTORIZACION_TIPO AUTORIZACION.TIPO%TYPE;
+    X NUMBER(3,0);
+      
+    BEGIN
+        COMMIT;
+        SELECT COUNT(*) INTO X FROM AUTORIZACION WHERE AUTORIZACION.PERSONA_ID=PA_ID;
+
+        IF (X=0) THEN
+
+          UPDATE PERSONA_AUTORIZADA SET ESTADO='BORRADO' WHERE ID=PA_ID;
+          UPDATE PERSONA_AUTORIZADA SET FECHA_FIN=SYSDATE WHERE ID=PA_ID;
+      
+        ELSE
+            SELECT TIPO INTO AUTORIZACION_TIPO FROM AUTORIZACION INNER JOIN PERSONA_AUTORIZADA ON PERSONA_ID=ID;
+
+            IF (AUTORIZACION_TIPO != 'CONSULTA' AND
+                AUTORIZACION_TIPO != 'OPERACION') THEN
+			    RAISE TIPO_AUTORIZACION_NO_VALIDO_EXCEPTION;
+		    END IF;
+          DELETE FROM AUTORIZACION WHERE AUTORIZACION.PERSONA_ID=PA_ID
+                                    AND AUTORIZACION.TIPO=AUTORIZACION_TIPO;
+
+        END IF;
+        
+        EXCEPTION
+            WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+        
+      
+    END BORRARAUTORIZADO;   
+
+END PK_GESTION_CLIENTES;
+
+--COMMIT;
+
+
+
+--RF5 Y RF9
+-- ====== CABECERAS ======
+CREATE OR REPLACE PACKAGE PK_GESTION_CUENTAS AS
+
+    
+    --RF5 FUNCIONAL
+    PROCEDURE ABRIRCUENTA(
+            CU_IBAN             CUENTA.IBAN%TYPE,          --OBLIGATORIO
+            CU_SWIFT            CUENTA.SWIFT%TYPE,         --OPCIONAL
+            CU_TIPO             CUENTA_FINTECH.CLASIFICACION%TYPE, --OBLIGATORIO
+            CU_CLAS             CUENTA_FINTECH.CLASIFICACION%TYPE, --OPCIONAL. ?
+            CU_COMISION         SEGREGADA.COMISION%TYPE,   --OPCIONAL 
+            ID_CLIENTE          CLIENTE.ID%TYPE,           --OBLIGATORIO
+            CREF_IBAN           CUENTA.IBAN%TYPE   --OBLIGATORIO SI ES SEGREGADA
+    );
+    
+    --RF9 PENDIENTE DE PRUEBAS
+    -- SE CERRARAN CUENTAS POOLED O SEGREGADA
+    -- ¿Se puede cerrar fintech sin ser pooled o segregada?
+    -- Mirar linea 118
+    PROCEDURE CERRARCUENTA(CU_IBAN CUENTA.IBAN%TYPE);
+
+PARAMETROS_INCORRECTOS_EXCEPTION EXCEPTION;
+CUENTA_EXISTENTE_EXCEPTION EXCEPTION;
+CUENTA_INCORRECTA_EXCEPTION EXCEPTION;
+SALDO_POSITIVO_EXCEPTION EXCEPTION;
+    
+END PK_GESTION_CUENTAS;
+/
+
+
+
+
+-- ====== CUERPO ======
+CREATE OR REPLACE PACKAGE BODY PK_GESTION_CUENTAS AS
+
+PROCEDURE ABRIRCUENTA(
+        CU_IBAN             CUENTA.IBAN%TYPE,         
+        CU_SWIFT            CUENTA.SWIFT%TYPE,        
+        CU_TIPO             CUENTA_FINTECH.CLASIFICACION%TYPE,
+        CU_CLAS             CUENTA_FINTECH.CLASIFICACION%TYPE,
+        CU_COMISION         SEGREGADA.COMISION%TYPE,   
+        ID_CLIENTE          CLIENTE.ID%TYPE,           
+        CREF_IBAN           CUENTA.IBAN%TYPE) AS   
+    ESTADO_C    CLIENTE.ESTADO%TYPE;
+    N_CUENTAS   INT;
+    X_CLIENTE   INT;
+    X_CREF_IBAN INT; --PARA COMPROBAR QUE EXISTE CUENTA REFERENCIA (EN TABLA)
+    BEGIN
+        -- VALORES VARIABLES
+        SELECT ESTADO INTO ESTADO_C FROM CLIENTE WHERE ID_CLIENTE = CLIENTE.ID;
+        IF (UPPER(ESTADO_C) = 'BAJA') OR (ESTADO_C IS NULL) OR (CU_IBAN IS NULL) THEN
+            RAISE PARAMETROS_INCORRECTOS_EXCEPTION;
+        END IF;
+        
+        SELECT COUNT(*) INTO N_CUENTAS FROM CUENTA WHERE CUENTA.IBAN = CU_IBAN;
+        IF N_CUENTAS > 0 THEN
+            RAISE CUENTA_EXISTENTE_EXCEPTION;
+        END IF;
+        
+        SELECT COUNT(*) INTO X_CREF_IBAN FROM CUENTA_REFERENCIA WHERE CUENTA_REFERENCIA.IBAN = CREF_IBAN;
+        --
+        INSERT INTO CUENTA(IBAN, SWIFT) VALUES(CU_IBAN, CU_SWIFT);
+        
+        INSERT INTO CUENTA_FINTECH(IBAN, ESTADO, FECHA_APERTURA, CLASIFICACION, CLIENTE_ID)
+            VALUES(CU_IBAN, 'ALTA', CURRENT_DATE, CU_CLAS, ID_CLIENTE);
+            
+        -- CASO POOLED
+        IF UPPER(CU_TIPO) LIKE 'POOLED' THEN
+            INSERT INTO POOLED_ACCOUNT(IBAN) VALUES (CU_IBAN);
+            --SI ES POOLED Y HAY CREF, INSERTAR REGISTRO EN DEPOSITADA_EN
+            IF X_CREF_IBAN > 0 THEN
+                INSERT INTO DEPOSITADA_EN(SALDO, CUENTA_REFERENCIA_IBAN, POOLED_ACCOUNT_IBAN)
+                VALUES (0, CREF_IBAN, CU_IBAN);
+            END IF;
+        
+        -- CASO SEGREGADA
+        ELSIF UPPER(CU_TIPO) LIKE 'SEGREGADA' THEN
+            --PARAMETROS OBLIGATORIOS SI ES SEGREGADA:
+            IF CREF_IBAN IS NULL THEN
+                RAISE PARAMETROS_INCORRECTOS_EXCEPTION;
+            END IF;
+            --INSERT INTO SEGREGADA. CUENTA REF OBLIGATORIO
+            IF X_CREF_IBAN > 0 THEN
+                INSERT INTO SEGREGADA(IBAN, COMISION, CUENTA_REFERENCIA_IBAN)
+                    VALUES(CU_IBAN, CU_COMISION, CREF_IBAN);
+            ELSE
+                
+                RAISE PARAMETROS_INCORRECTOS_EXCEPTION;
+            END IF;
+        ELSE
+            RAISE PARAMETROS_INCORRECTOS_EXCEPTION;
+        END IF;    
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+	    ROLLBACK;
+            RAISE;
+    
+END ABRIRCUENTA;
+
+
+--==========
+PROCEDURE CERRARCUENTA(CU_IBAN CUENTA.IBAN%TYPE) AS
+   SUMA_SALDO INT;
+    X_CUENTA   INT;
+    IBAN_REF_SEGREGADA CUENTA.IBAN%TYPE;
+    TIPO       CUENTA_FINTECH.CLASIFICACION%TYPE; -- PARA VER SI ES POOLED O SEGREGADA. SI NO, NO HACE NADA.
+    
+    BEGIN
+        -- CUENTA EXISTENTE? TIPO POOLED O SEGREGADA?
+        SELECT COUNT(*) INTO X_CUENTA FROM SEGREGADA WHERE IBAN = CU_IBAN;
+        IF X_CUENTA > 0 THEN
+            TIPO := 'SEGREGADA';
+            ELSE
+                SELECT COUNT(*) INTO X_CUENTA FROM POOLED_ACCOUNT WHERE IBAN = CU_IBAN;
+                IF X_CUENTA > 0 THEN 
+                    TIPO := 'POOLED';
+                    ELSE 
+                        RAISE CUENTA_INCORRECTA_EXCEPTION;
+                END IF;
+        END IF;
+        
+        -- COMPROBAR QUE SALDO ES 0
+        IF TIPO = 'SEGREGADA' THEN
+            SELECT CUENTA_REFERENCIA_IBAN INTO IBAN_REF_SEGREGADA 
+            FROM SEGREGADA
+            WHERE IBAN = CU_IBAN;
+            
+            SELECT SALDO INTO SUMA_SALDO
+            FROM CUENTA_REFERENCIA
+            WHERE IBAN=IBAN_REF_SEGREGADA;
+            
+        ELSIF TIPO = 'POOLED' THEN
+            SELECT SUM(SALDO)INTO SUMA_SALDO 
+                FROM DEPOSITADA_EN 
+                WHERE POOLED_ACCOUNT_IBAN = CU_IBAN;
+        END IF;
+        
+        --MODIFICAR ESTADO Y FECHA_CIERRE
+        IF SUMA_SALDO = 0 THEN
+            UPDATE CUENTA_FINTECH SET
+                ESTADO = 'BAJA',
+                FECHA_CIERRE = CURRENT_DATE
+            WHERE IBAN = CU_IBAN;
+        ELSE
+            RAISE SALDO_POSITIVO_EXCEPTION;
+        END IF;
+        
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+
+END CERRARCUENTA;
+
+END PK_GESTION_CUENTAS;
+/
+
+-- EJERCICIO 2 V_SALDOS_INDIVIDUAL FUNCIONA :D
+
+CREATE OR REPLACE VIEW V_SALDOS_INDIVIDUAL AS
+    SELECT CLIENTE.IDENTIFICACION, CUENTA_FINTECH.IBAN,DEPOSITADA_EN.SALDO,DIVISA.ABREVIATURA,DIVISA.CAMBIOEURO
+    FROM CLIENTE JOIN CUENTA_FINTECH ON CLIENTE.ID=CUENTA_FINTECH.CLIENTE_ID 
+    JOIN DEPOSITADA_EN ON DEPOSITADA_EN.POOLED_ACCOUNT_IBAN=CUENTA_FINTECH.IBAN 
+    JOIN CUENTA_REFERENCIA ON CUENTA_REFERENCIA.IBAN=DEPOSITADA_EN.CUENTA_REFERENCIA_IBAN
+    JOIN DIVISA ON CUENTA_REFERENCIA.DIVISA_ABREVIATURA=DIVISA.ABREVIATURA
+    
+    UNION ALL
+    
+    SELECT CLIENTE.IDENTIFICACION, CUENTA_FINTECH.IBAN,CUENTA_REFERENCIA.SALDO,DIVISA.ABREVIATURA,DIVISA.CAMBIOEURO
+    FROM CLIENTE JOIN CUENTA_FINTECH ON CLIENTE.ID=CUENTA_FINTECH.CLIENTE_ID 
+    JOIN CUENTA_REFERENCIA ON CUENTA_REFERENCIA.IBAN=CUENTA_FINTECH.IBAN
+    JOIN DIVISA ON CUENTA_REFERENCIA.DIVISA_ABREVIATURA=DIVISA.ABREVIATURA;
+    
+CREATE OR REPLACE VIEW V_SALDOS_AUTORIZADA AS
+    SELECT PERSONA_AUTORIZADA.IDENTIFICACION, CUENTA_FINTECH.IBAN,DEPOSITADA_EN.SALDO,DIVISA.ABREVIATURA,DIVISA.CAMBIOEURO
+    FROM PERSONA_AUTORIZADA JOIN AUTORIZACION ON AUTORIZACION.PERSONA_ID=PERSONA_AUTORIZADA.ID
+    JOIN EMPRESA ON AUTORIZACION.EMPRESA_ID=EMPRESA.ID
+    JOIN CLIENTE ON CLIENTE.ID=EMPRESA.ID
+    JOIN CUENTA_FINTECH ON CLIENTE.ID=CUENTA_FINTECH.CLIENTE_ID 
+    JOIN DEPOSITADA_EN ON DEPOSITADA_EN.POOLED_ACCOUNT_IBAN=CUENTA_FINTECH.IBAN 
+    JOIN CUENTA_REFERENCIA ON CUENTA_REFERENCIA.IBAN=DEPOSITADA_EN.CUENTA_REFERENCIA_IBAN
+    JOIN DIVISA ON CUENTA_REFERENCIA.DIVISA_ABREVIATURA=DIVISA.ABREVIATURA
+    
+    UNION ALL
+    
+    SELECT PERSONA_AUTORIZADA.IDENTIFICACION, CUENTA_FINTECH.IBAN,CUENTA_REFERENCIA.SALDO,DIVISA.ABREVIATURA,DIVISA.CAMBIOEURO
+     FROM PERSONA_AUTORIZADA JOIN AUTORIZACION ON AUTORIZACION.PERSONA_ID=PERSONA_AUTORIZADA.ID
+    JOIN EMPRESA ON AUTORIZACION.EMPRESA_ID=EMPRESA.ID
+    JOIN CLIENTE ON CLIENTE.ID=EMPRESA.ID
+    JOIN CUENTA_FINTECH ON CLIENTE.ID=CUENTA_FINTECH.CLIENTE_ID 
+    JOIN CUENTA_REFERENCIA ON CUENTA_REFERENCIA.IBAN=CUENTA_FINTECH.IBAN
+    JOIN DIVISA ON CUENTA_REFERENCIA.DIVISA_ABREVIATURA=DIVISA.ABREVIATURA;
+
+--EJERCICIO 2 TR_TRANSACCION
+
+CREATE SEQUENCE SQ_TRANSACCION
+    START WITH 1; --SI YA HAY DATOS EN TRANSACCION CAMBIAR A UN NUMERO QUE NO TENGA YA ID_UNICA
+
+CREATE OR REPLACE TRIGGER TR_TRANSACCION
+    BEFORE INSERT ON TRANSACCION
+        FOR EACH ROW
+Begin
+    :new.ID_UNICO := SQ_TRANSACCION.NEXTVAL;
+END TR_TRANSACCION;
+
+--EJERCICIO 3 A) V_TARJETA_MENSUAL
+
+CREATE OR REPLACE VIEW V_TARJETA_MENSUAL (IDENTIFICACION, NUMERO_TARJETA, GASTO, ABREVIATURA) 
+    AS (SELECT CLIENTE.identificacion, TARJETA_CREDITO.num_tarjeta, SUM(MOVIMIENTO.cantidad), DIVISA.abreviatura 
+    FROM CLIENTE, DIVISA, TARJETA_CREDITO, MOVIMIENTO, CUENTA_FINTECH
+    
+    WHERE
+        CUENTA_FINTECH.CLIENTE_ID=CLIENTE.ID AND
+        CUENTA_FINTECH.IBAN = TARJETA_CREDITO.CUENTA_IBAN AND
+        TARJETA_CREDITO.num_tarjeta = MOVIMIENTO.num_tarjeta AND
+        MOVIMIENTO.divisa = DIVISA.abreviatura
+    GROUP BY DIVISA.abreviatura,CLIENTE.identificacion, TARJETA_CREDITO.num_tarjeta);
+
+
+--EJERCICIO 3 B) V_PAGOS_PENDIENTES
+    CREATE OR REPLACE VIEW v_pagos_pendientes (identificacion, numero_tarjeta, pendientes, abreviatura)
+    AS (SELECT C.identificacion, T.num_tarjeta, M.estado, D.abreviatura
+    FROM CLIENTE C, divisa D, tarjeta_credito T, movimiento M, CUENTA_FINTECH CF
+    WHERE
+        CF.CLIENTE_ID=C.ID AND
+        CF.IBAN = T.CUENTA_IBAN AND
+        T.NUM_TARJETA = M.num_tarjeta AND
+        M.divisa = D.abreviatura AND
+        M.estado = 'PENDIENTE');
+
+--EJERCICIO 3 C) P_COBROS
+
+CREATE OR REPLACE PROCEDURE P_COBRO IS MODO TARJETA_CREDITO.MODO_DEFAULT%TYPE;
+                                       SALDO_ACTUAL DEPOSITADA_EN.SALDO%TYPE;
+                                       IBAN_TARJETA CUENTA.IBAN%TYPE;
+                                       CANTIDAD_MOV MOVIMIENTO.CANTIDAD%TYPE;
+                                                                         
+    CURSOR C_TARJETA IS SELECT NUM_TARJETA FROM TARJETA_CREDITO; 
+    
+BEGIN
+
+    BEGIN
+     
+    FOR TARJETA IN C_TARJETA LOOP
+     
+    --Seleccionamos las filas estado y modo de la tarjeta
+         SELECT MODO_DEFAULT INTO MODO FROM TARJETA_CREDITO WHERE TARJETA.NUM_TARJETA=TARJETA_CREDITO.NUM_TARJETA;
+         SELECT CUENTA.IBAN INTO IBAN_TARJETA FROM CUENTA JOIN TARJETA_CREDITO ON CUENTA.IBAN=TARJETA_CREDITO.CUENTA_IBAN WHERE TARJETA.NUM_TARJETA=NUM_TARJETA;
+         SELECT SUM(SALDO) INTO SALDO_ACTUAL FROM DEPOSITADA_EN WHERE IBAN_TARJETA=POOLED_ACCOUNT_IBAN;
+         SELECT SUM(CANTIDAD) INTO CANTIDAD_MOV FROM MOVIMIENTO WHERE TARJETA.NUM_TARJETA=NUM_TARJETA;
+
+    UPDATE MOVIMIENTO SET ESTADO=UPPER('cobrado') WHERE  TARJETA.NUM_TARJETA=NUM_TARJETA AND UPPER(ESTADO)=UPPER('pendiente') AND UPPER(MODO)=UPPER('debito');
+    UPDATE DEPOSITADA_EN SET SALDO=SALDO_ACTUAL-CANTIDAD_MOV WHERE IBAN_TARJETA=POOLED_ACCOUNT_IBAN;
+    
+    END LOOP;
+    END;
+    
+
+    
+END P_COBRO;
+
+-- EJERCICIO 3 D) J_LIQUIDAR
+
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+    job_name => 'J_LIQUIDAR',
+    job_type => 'PLSQL_BLOCK',
+    job_action => 'BEGIN EXEC P_COBRO; END;',
+    start_date => LAST_DAY(SYSDATE)+1,
+    repeat_interval => 'FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=0',
+    end_date => NULL,
+    enabled => TRUE,
+    comments => 'Ejecuta procedimiento P_COBRO cada primer dia del mes');
+END;
+
+
+-- =========================OPCIONAL===================
+-- 4. AUDITORÍAS
+AUDIT ALL ON FINTECH.TRANSACCION;
+AUDIT ALL ON FINTECH.MOVIMIENTO;
+
+AUDIT UPDATE, INSERT, DELETE ON FINTECH.DEPOSITADA_EN;
+AUDIT UPDATE, INSERT, DELETE ON FINTECH.CUENTA_REFERENCIA;
+
+---- DESDE SYSTEM --
+--Muestra la auditoría estándar:
+SELECT * FROM SYS.DBA_AUDIT_TRAIL;
+
+--Información relativa a la auditoría de los inicios de sesión de los usuarios
+SELECT * FROM SYS.DBA_AUDIT_SESSION;
+
+-- Ver que la auditoría AUDIT_TRAIL está activa:
+SELECT name, value
+FROM v$parameter
+WHERE NAME LIKE 'audit_trail';
+-- ====FIN AUDITORÍAS====
+
+
+-- ROLES
+
+CREATE ROLE R_PERSONAL; -- admin
+CREATE ROLE R_USUARIO;
+CREATE ROLE R_PERS_AUT; -- Introducir y borrar cuentas
+
+GRANT CONNECT TO R_PERSONAL, R_USUARIO, R_PERS_AUT;-- SE PUEDEN CONECTAR
+GRANT EXECUTE ON PK_GESTION_CLIENTES TO R_PERSONAL;-- EL PERSONAL PUEDE MANIPULAR LOS CLIENTES/PERSONAS AUTORIZADAS
+GRANT EXECUTE ON PK_GESTION_CUENTAS TO R_PERSONAL, R_PERS_AUT;--EL PERSONAL Y LAS PERSONAS AUTORIZADAS PUEDEN MANIPULAR LAS CUENTAS
+
+GRANT SELECT ON CLIENTE TO R_USUARIO, R_PERS_AUT;--TODOS LOS USUARIOS PUEDEN ACCEDER A LA INFORMACION NECESARIA
+GRANT SELECT ON EMPRESA TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON INDIVIDUAL TO R_USUARIO;
+GRANT SELECT ON CUENTA_FINTECH TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON CUENTA_POOLED TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON SEGREGADA TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON REFERENCIA TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON TARJETA_CREDITO TO R_USUARIO, R_PERS_AUT;
+GRANT SELECT ON MOVIMIENTO TO R_USUARIO, R_PERS_AUT;
+
+GRANT SELECT ON DEPOSITADA_EN TO R_PERS_AUT;
+GRANT SELECT ON DIVISA TO R_PERS_AUT;
+
+GRANT SELECT ANY TABLE TO R_PERSONAL;
+
+GRANT EXECUTE ON PK_GESTION_CLIENTES TO R_PERSONAL, R_PERS_AUT;
+GRANT EXECUTE ON PK_GESTION_CUENTAS TO R_PERSONAL, R_PERS_AUT;
+GRANT SELECT ON V_SALDOS_INDIVIDUAL TO R_USUARIO, R_PERSONAL, R_PERS_AUT;
+GRANT SELECT ON V_SALDOS_AUTORIZADA TO R_USUARIO, R_PERSONAL, R_PERS_AUT;
+GRANT SELECT ON V_TARJETA_MENSUAL TO R_USUARIO, R_PERSONAL, R_PERS_AUT;
+GRANT SELECT ON V_PAGOS_PENDIENTES TO R_USUARIO, R_PERSONAL, R_PERS_AUT;
+GRANT EXECUTE ON P_COBROS TO PERSONAL, R_PERS_AUT;
+
+--USUARIOS
+
+CREATE USER usuario1 IDENTIFIED BY user01;
+GRANT R_USUARIO TO usuario1;
+
+CREATE USER personal IDENTIFIED BY personal01;
+GRANT R_PERSONAL TO personal;
+
+CREATE USER persAut IDENTIFIED BY pa01;
+GRANT R_PERS_AUT TO persAut;
