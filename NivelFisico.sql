@@ -182,7 +182,7 @@ CREATE TABLE segregada (
 
 -- NOMBRE CAMBIADO A SINGULAR
 CREATE TABLE tarjeta_credito (
-    num_tarjeta       NUMBER(16) NOT NULL, -- CAMBIADO
+    num_tarjeta       NUMBER(20) NOT NULL, -- CAMBIADO
     cvc               NUMBER(3) NOT NULL,
     fecha_caducidad   DATE NOT NULL,
     nom_propietario   VARCHAR2(20) NOT NULL,
