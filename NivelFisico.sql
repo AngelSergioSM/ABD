@@ -350,6 +350,15 @@ ALTER TABLE transaccion
     ADD CONSTRAINT transaccion_tarjeta_credito_fk FOREIGN KEY ( tarjeta_credito_num_tarjeta)
         REFERENCES tarjeta_credito ( num_tarjeta);
 
+--SECUENCIAS
+CREATE SEQUENCE SQ_CLIENTE
+	START WITH 10;
+    
+CREATE SEQUENCE SQ_PERSONA
+	START WITH 10;
+
+
+
 
 -- 3. IMPORTACIÓN DE DATOS 
 -- En las tablas del usuario, click derecho en DIVISA (de fintech), importar datos...

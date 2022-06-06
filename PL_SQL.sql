@@ -5,8 +5,7 @@
 create or replace PACKAGE PK_GESTION_CLIENTES AS 
 
     --RF2 FUNCIONAL
-    PROCEDURE ALTACLIENTE(C_ID  CLIENTE.ID%TYPE,
-                        C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+    PROCEDURE ALTACLIENTE(C_IDENT CLIENTE.IDENTIFICACION%TYPE,
                         C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
                         C_ESTADO CLIENTE.ESTADO%TYPE,
                         C_FA CLIENTE.FECHA_ALTA%TYPE,
@@ -85,28 +84,22 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
 
 --RF2 FUNCIONAL-------------------------------------------------------------------------------------------------------------------
 
-        PROCEDURE ALTACLIENTE(C_ID  CLIENTE.ID%TYPE,
-                              C_IDENT CLIENTE.IDENTIFICACION%TYPE,
-                              C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
-                              C_ESTADO CLIENTE.ESTADO%TYPE,
-                              C_FA CLIENTE.FECHA_ALTA%TYPE,
-                              C_DIR CLIENTE.DIRECCION%TYPE,
-                              C_CIUDAD CLIENTE.CIUDAD%TYPE,
-                              C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
-                              C_PAIS CLIENTE.PAIS%TYPE,
-                              E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
-                              I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
-                              I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
-                              I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE) AS
-    X NUMBER(3,0);
+       PROCEDURE ALTACLIENTE(C_IDENT CLIENTE.IDENTIFICACION%TYPE,
+                        C_TIPO CLIENTE.TIPO_CLIENTE%TYPE,
+                        C_ESTADO CLIENTE.ESTADO%TYPE,
+                        C_FA CLIENTE.FECHA_ALTA%TYPE,
+                        C_DIR CLIENTE.DIRECCION%TYPE,
+                        C_CIUDAD CLIENTE.CIUDAD%TYPE,
+                        C_POSTAL CLIENTE.CODIGOPOSTAL%TYPE,
+                        C_PAIS CLIENTE.PAIS%TYPE,
+                        E_RAZON EMPRESA.RAZON_SOCIAL%TYPE,
+                        I_NOMBRE INDIVIDUAL.NOMBRE%TYPE,
+                        I_APELLIDO INDIVIDUAL.APELLIDO%TYPE,
+                        I_FN INDIVIDUAL.FECHA_NACIMIENTO%TYPE) AS
+                        
   ID_CLIENTE CLIENTE.ID%TYPE;
 
   BEGIN
-      
-      SELECT COUNT(ID) INTO X FROM CLIENTE WHERE C_ID=ID;
-      IF(X>0) THEN
-        RAISE CLIENTE_EXISTENTE_EXCEPTION;
-      END IF;
       
         ID_CLIENTE:=SQ_CLIENTE.NEXTVAL;
     
@@ -121,12 +114,6 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
       ELSE
         RAISE CLIENTE_NO_VALIDO_EXCEPTION;
       END IF;
-
-  EXCEPTION
-    WHEN OTHERS THEN
-        --ROLLBACK;
-        RAISE;
-
   END ALTACLIENTE;
 
 --COMMIT;
@@ -302,7 +289,9 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
     BEGIN
                                 
       SELECT COUNT(*) INTO X_PA FROM PERSONA_AUTORIZADA
-      WHERE PERSONA_AUTORIZADA.ID = PA_ID;
+      WHERE PERSONA_AUTORIZADA.ID = PA_ID
+      AND PERSONA_AUTORIZADA.IDENTIFICACION=PA_IDENT;
+      
       IF(X_PA=0) THEN
           RAISE NO_AUTORIZADOS_EXCEPTION;
       END IF;
@@ -332,6 +321,7 @@ create or replace PACKAGE BODY PK_GESTION_CLIENTES AS
     WHEN OTHERS THEN
         --ROLLBACK;
         RAISE;
+
 
     END MODIFICARAUTORIZADO;
 
