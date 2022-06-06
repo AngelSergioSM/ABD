@@ -61,6 +61,65 @@ CREATE OR REPLACE VIEW V_TARJETA_MENSUAL (IDENTIFICACION, NUMERO_TARJETA, GASTO,
         MOVIMIENTO.divisa = DIVISA.abreviatura
     GROUP BY DIVISA.abreviatura,CLIENTE.identificacion, TARJETA_CREDITO.num_tarjeta);
 
+
+--EJERCICIO 3 B) V_PAGOS_PENDIENTES
+    CREATE OR REPLACE VIEW v_pagos_pendientes (identificacion, numero_tarjeta, pendientes, abreviatura)
+    AS (SELECT C.identificacion, T.num_tarjeta, M.estado, D.abreviatura
+    FROM CLIENTE C, divisa D, tarjeta_credito T, movimiento M, CUENTA_FINTECH CF
+    WHERE
+        CF.CLIENTE_ID=C.ID AND
+        CF.IBAN = T.CUENTA_IBAN AND
+        T.NUM_TARJETA = M.num_tarjeta AND
+        M.divisa = D.abreviatura AND
+        M.estado = 'PENDIENTE');
+
+--EJERCICIO 3 C) P_COBROS
+
+CREATE OR REPLACE PROCEDURE P_COBRO IS MODO TARJETA_CREDITO.MODO_DEFAULT%TYPE;
+                                       SALDO_ACTUAL DEPOSITADA_EN.SALDO%TYPE;
+                                       IBAN_TARJETA CUENTA.IBAN%TYPE;
+                                       CANTIDAD_MOV MOVIMIENTO.CANTIDAD%TYPE;
+                                                                         
+    CURSOR C_TARJETA IS SELECT NUM_TARJETA FROM TARJETA_CREDITO; 
+    
+BEGIN
+
+    BEGIN
+     
+    FOR TARJETA IN C_TARJETA LOOP
+     
+    --Seleccionamos las filas estado y modo de la tarjeta
+         SELECT MODO_DEFAULT INTO MODO FROM TARJETA_CREDITO WHERE TARJETA.NUM_TARJETA=TARJETA_CREDITO.NUM_TARJETA;
+         SELECT CUENTA.IBAN INTO IBAN_TARJETA FROM CUENTA JOIN TARJETA_CREDITO ON CUENTA.IBAN=TARJETA_CREDITO.CUENTA_IBAN WHERE TARJETA.NUM_TARJETA=NUM_TARJETA;
+         SELECT SUM(SALDO) INTO SALDO_ACTUAL FROM DEPOSITADA_EN WHERE IBAN_TARJETA=POOLED_ACCOUNT_IBAN;
+         SELECT SUM(CANTIDAD) INTO CANTIDAD_MOV FROM MOVIMIENTO WHERE TARJETA.NUM_TARJETA=NUM_TARJETA;
+
+    UPDATE MOVIMIENTO SET ESTADO=UPPER('cobrado') WHERE  TARJETA.NUM_TARJETA=NUM_TARJETA AND UPPER(ESTADO)=UPPER('pendiente') AND UPPER(MODO)=UPPER('debito');
+    UPDATE DEPOSITADA_EN SET SALDO=SALDO_ACTUAL-CANTIDAD_MOV WHERE IBAN_TARJETA=POOLED_ACCOUNT_IBAN;
+    
+    END LOOP;
+    END;
+    
+
+    
+END P_COBRO;
+
+-- EJERCICIO 3 D) J_LIQUIDAR
+
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+    job_name => 'J_LIQUIDAR',
+    job_type => 'PLSQL_BLOCK',
+    job_action => 'BEGIN EXEC P_COBRO; END;',
+    start_date => LAST_DAY(SYSDATE)+1,
+    repeat_interval => 'FREQ=MONTHLY;BYMONTHDAY=1;BYHOUR=0',
+    end_date => NULL,
+    enabled => TRUE,
+    comments => 'Ejecuta procedimiento P_COBRO cada primer dia del mes');
+END;
+
+
 -- =========================OPCIONAL===================
 -- 4. AUDITORÍAS
 AUDIT ALL ON FINTECH.TRANSACCION;
