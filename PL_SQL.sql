@@ -120,6 +120,23 @@ BEGIN
 END;
 
 
+BEGIN
+DBMS_SCHEDULER.CREATE_JOB(
+    job_name            => 'J_CAMBIO_EURO',
+    job_type            => 'PLSQL_BLOCK',
+    job_action          => 'CAMBIO_EURO;',
+    start_date          =>  SYSDATE,
+    repeat_interval     =>  'FREQ=DAILY;BYHOUR=0;BYMINUTE=5' ,
+    end_date            => null,
+    enabled             => TRUE,
+    comments            => 'Actualiza el atributo CambioEuro con el valor de V_COTIZACIONES a las 00:05 de cada día.'
+);
+END;
+
+
+
+
+
 -- =========================OPCIONAL===================
 -- 4. AUDITORÍAS
 AUDIT ALL ON FINTECH.TRANSACCION;
