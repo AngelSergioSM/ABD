@@ -1,5 +1,12 @@
 # ABD
-Trabajo ABD
+Trabajo ABD 
+
+Integrantes Grupo JARD:
+Angel Sergio Sánchez Marín
+Claudia Paola García Nocetti
+Diego Cuesta García
+Javier Márquez Ruiz
+Rubén Cazorla Rodríguez
 
 
 # Explicación del modelo (vídeo)
